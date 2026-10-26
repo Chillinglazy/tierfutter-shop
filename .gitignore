@@ -1,0 +1,22 @@
+# Tierfutter-Shop – Dateien, die nicht in Git gehören
+
+# Datenbank-Zugangsdaten (Vorlage: config.local.example.php)
+config.local.php
+
+# Datenbank-Exporte mit echten Benutzerdaten (schema.sql bleibt in Git)
+*.sql
+!schema.sql
+
+# Logs und temporäre Dateien
+*.log
+*.tmp
+*.bak
+
+# Persönliche Editor-Einstellungen
+.vscode/
+.idea/
+
+# Systemdateien von Windows und macOS
+Thumbs.db
+desktop.ini
+.DS_Store

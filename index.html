@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="de">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   Tierfutter-Shop · Bargen
+  </title>
+  <meta content="Tierfutter passend zu deinem Liebling. Entdecke den Tierfutter-Shop aus Bargen, Schaffhausen." name="description"/>
+  <link href="style.css" rel="stylesheet"/>
+  <script defer="" src="script.js">
+  </script>
+ </head>
+ <body>
+  <div class="notice">
+   Mit Liebe gefüttert. Mit Freude gelebt.
+  </div>
+  <header>
+   <a class="brand" href="#">
+    <img alt="Tierfutter Logo mit Hund und Katze" src="assets/logo.png"/>
+    <span>
+     tierfutter-shop
+     <small>
+      BARGEN · SCHAFFHAUSEN
+     </small>
+    </span>
+   </a>
+   <div class="actions">
+    <button class="btn" onclick="openCart()">
+     ♧ Warenkorb
+     <span id="count">
+      (0)
+     </span>
+    </button>
+    <span class="user-info" hidden="" id="userInfo">
+    </span>
+    <button class="btn" id="registerBtn" onclick="openAuth('register')">
+     Registrieren
+    </button>
+    <button class="btn solid" id="loginBtn" onclick="openAuth('login')">
+     Login ↗
+    </button>
+    <button class="btn" hidden="" id="logoutBtn" onclick="logout()">
+     Logout
+    </button>
+   </div>
+  </header>
+  <nav>
+   <a href="#sortiment">
+    Unser Sortiment
+   </a>
+   <a href="#finder">
+    Futter finden
+   </a>
+   <a href="#kontakt">
+    Kontakt
+   </a>
+  </nav>
+  <main>
+   <section class="hero">
+    <div>
+     <div class="eyebrow">
+      Für kleine Pfoten &amp; grosse Herzen
+     </div>
+     <h1>
+      Gutes Futter.
+      <br/>
+      <em>
+       Glückliche Tiere.
+      </em>
+     </h1>
+     <p>
+      Jeder Liebling ist einzigartig. Finde das Futter, das zu ihm passt – mit Sorgfalt ausgewählt und ganz viel Liebe.
+     </p>
+     <a class="btn solid" href="#finder" style="display:inline-block;margin-top:12px">
+      Lieblingsfutter finden ↗
+     </a>
+    </div>
+    <div class="hero-art">
+     <img alt="Glücklicher Hund und Katze am Futternapf" src="assets/logo.png"/>
+     <div class="bubble">
+      ♡ Für deinen besten Freund.
+      <br/>
+      <strong>
+       Nur das Gute im Napf.
+      </strong>
+     </div>
+    </div>
+   </section>
+   <div class="perks">
+    <span>
+     ♧ Sorgfältig ausgewähltes Futter
+    </span>
+    <span>
+     ♡ Für jede Lebensphase
+    </span>
+    <span>
+     ⌂ Zuhause in Schaffhausen
+    </span>
+   </div>
+   <section class="finder" id="finder" style="margin-top:32px">
+    <div class="finder-top">
+     <strong>
+      Was mag dein Liebling?
+     </strong>
+     <span>
+      Finde das passende Futter in wenigen Klicks.
+     </span>
+    </div>
+    <div class="fields">
+     <label>
+      Tier
+      <select id="animal">
+       <option value="">
+        Alle Tiere
+       </option>
+       <option>
+        Hund
+       </option>
+       <option>
+        Katze
+       </option>
+      </select>
+     </label>
+     <label>
+      Futterart
+      <select id="type">
+       <option value="">
+        Alle Futterarten
+       </option>
+       <option>
+        Trockenfutter
+       </option>
+       <option>
+        Nassfutter
+       </option>
+       <option>
+        Snacks
+       </option>
+      </select>
+     </label>
+     <label>
+      Spezialfutter
+      <select id="special">
+       <option value="">
+        Alle Bedürfnisse
+       </option>
+       <option>
+        Getreidefrei
+       </option>
+       <option>
+        Sensitive
+       </option>
+       <option>
+        Senior
+       </option>
+      </select>
+     </label>
+     <label>
+      Geschmack
+      <select id="taste">
+       <option value="">
+        Alle Geschmäcker
+       </option>
+       <option>
+        Huhn
+       </option>
+       <option>
+        Lachs
+       </option>
+       <option>
+        Rind
+       </option>
+       <option>
+        Kräuter
+       </option>
+      </select>
+     </label>
+     <label>
+      Gewicht des Tiers (kg)
+      <input id="weight" min="0.1" placeholder="z. B. 12" step="0.1" type="number"/>
+     </label>
+     <label>
+      Alter des Tiers (Jahre)
+      <input id="age" min="0" placeholder="z. B. 3" step="0.5" type="number"/>
+     </label>
+    </div>
+    <div class="filter-bottom">
+     <span id="filterInfo">
+      Dein nächstes Lieblingsfutter wartet schon.
+     </span>
+     <button class="reset" onclick="resetFilters()">
+      Filter zurücksetzen ↺
+     </button>
+    </div>
+   </section>
+   <section id="sortiment">
+    <div class="section-head">
+     <h2>
+      Für jeden Napf das Richtige.
+     </h2>
+     <span id="resultCount">
+     </span>
+    </div>
+    <div class="grid" id="products">
+    </div>
+   </section>
+   <section class="bottom-banner">
+    <div>
+     <div class="eyebrow">
+      Mit Herz in Bargen
+     </div>
+     <h2 style="margin-top:10px">
+      Für Tiere. Für dich. Ganz nah.
+     </h2>
+     <p>
+      Fragen zu unserem Sortiment? Wir freuen uns auf deine Nachricht.
+     </p>
+    </div>
+    <a class="btn solid" href="mailto:aiyana.leemann@tierfutter-shop.ch">
+     Schreib uns ↗
+    </a>
+   </section>
+  </main>
+  <footer id="kontakt">
+   <div class="foot">
+    <div class="brand">
+     <img alt="" src="assets/logo.png"/>
+     <span>
+      tierfutter-shop
+      <small>
+       GUTES IM NAPF. LIEBE IM HERZEN.
+      </small>
+     </span>
+    </div>
+    <div>
+     <h4>
+      ADRESSE
+     </h4>
+     <p>
+      Tierfutter-Shop
+      <br/>
+      Bargen, Schaffhausen
+      <br/>
+      Schweiz
+     </p>
+    </div>
+    <div>
+     <h4>
+      KONTAKT
+     </h4>
+     <a href="mailto:aiyana.leemann@tierfutter-shop.ch">
+      aiyana.leemann@tierfutter-shop.ch
+     </a>
+     <p>
+      Wir freuen uns auf dich und deinen Liebling.
+     </p>
+    </div>
+   </div>
+   <div class="copyright">
+    © 2026 Tierfutter-Shop Bargen · Shop-Vorschau mit Beispielprodukten und Beispielpreisen. Keine Bestellungen oder Zahlungen möglich.
+   </div>
+  </footer>
+  <dialog id="cart">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">
+    ×
+   </button>
+   <h2>
+    Dein Warenkorb
+   </h2>
+   <div id="cartItems">
+   </div>
+   <p id="total">
+   </p>
+   <p class="demo" id="cartNote">
+    Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Nach dem Login wird er in dein Konto übernommen. Eine Bestellung ist noch nicht möglich.
+   </p>
+   <button class="btn solid" onclick="document.querySelector('#cart').close()">
+    Weiter stöbern
+   </button>
+  </dialog>
+  <dialog id="auth">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">
+    ×
+   </button>
+   <h2 id="authTitle">
+   </h2>
+   <p class="demo" id="authNote">
+   </p>
+   <form id="authForm">
+    <label id="nameLabel">
+     Name
+     <input autocomplete="name" id="name" maxlength="100"/>
+    </label>
+    <label>
+     E-Mail
+     <input autocomplete="email" id="email" maxlength="255" required="" type="email"/>
+    </label>
+    <label>
+     Passwort
+     <input id="password" maxlength="72" minlength="8" placeholder="Mindestens 8 Zeichen" required="" type="password"/>
+    </label>
+    <button class="btn solid" id="authSubmit" type="submit">
+    </button>
+   </form>
+   <p id="authMessage" role="status">
+   </p>
+  </dialog>
+  <div id="toast" role="status">
+  </div>
+ </body>
+</html>
