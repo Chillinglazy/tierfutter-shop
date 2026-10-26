@@ -8,8 +8,27 @@ AGB und Datenschutzerklärung. Bestellen geht mit Konto oder als Gast.
 - **Backend:** PHP 8 mit PDO
 - **Datenbank:** MySQL / MariaDB (XAMPP), Datenbank `tierfutter_shop`
 
-Hintergrund und Entscheidungen aus der Planungsphase stehen in
-[`docs/Projektkontext_README.md`](docs/Projektkontext_README.md).
+---
+
+## Ziel und Anforderungen
+
+Ziel ist ein kleiner Webshop für Tierfutter. Die Startseite `index.html` ist
+gleichzeitig der Shop: Man wählt dort direkt Produkte aus, legt sie in den
+Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
+
+**Anforderungen**
+- Registrierung mit Name, E-Mail und Passwort
+- Login mit E-Mail und Passwort
+- Passwörter nur als Hash speichern (`password_hash` / `password_verify`)
+- Kardinalitäten im Datenmodell sauber abbilden (1 : 1, 1 : N, N : M)
+- Technik: PHP mit PDO (Standard, nicht vorgegeben)
+- Weitere Funktionen sind freiwillig, es gibt keine Vorgaben der Lehrperson
+
+**Umgebung**
+- Windows mit XAMPP Control Panel v3.3.0 (Apache, MariaDB 10.4, PHP 8.2)
+- phpMyAdmin oder MySQL Workbench zum Verwalten der Datenbank
+- Eigene Datenbank `tierfutter_shop`. Die vorhandenen Datenbanken
+  `phpmyadmin` und `test` werden nicht verändert.
 
 ---
 
@@ -86,8 +105,7 @@ tierfutter-shop/
 ├── api/                PHP-Dateien, die script.js per fetch aufruft
 ├── includes/           PHP-Dateien, die nur eingebunden werden (gesperrt)
 ├── database/           SQL-Skripte für phpMyAdmin (gesperrt)
-├── docs/               Projektdokumentation (gesperrt)
-├── README.md           Diese Anleitung (gesperrt)
+├── README.md           Projektdokumentation (gesperrt)
 ├── .htaccess           Sperrt Dateien, die nicht zur Website gehören
 ├── .gitignore          Dateien, die nicht in Git kommen
 └── Tierfutter-Shop.code-workspace   VS-Code-Arbeitsbereich (gesperrt)
@@ -95,7 +113,7 @@ tierfutter-shop/
 
 Regel: Der Browser darf nur die Website aufrufen, also die HTML-Seiten,
 `css/`, `js/`, `assets/` und `api/`. Alles andere ist mit `.htaccess`
-gesperrt: `includes/`, `database/`, `docs/`, `.md`-Dateien, die
+gesperrt: `includes/`, `database/`, `.md`-Dateien, die
 VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 `.gitignore`. Gesperrte Adressen antworten mit 403 oder 404.
 
@@ -119,11 +137,10 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
-| `.htaccess` | Sperrt `.git`, `.gitignore`, `docs/`, `.md`-Dateien und die VS-Code-Datei für den Browser |
+| `.htaccess` | Sperrt `.git`, `.gitignore`, `.md`-Dateien und die VS-Code-Datei für den Browser |
 | `includes/.htaccess`, `database/.htaccess` | Sperren den jeweiligen Ordner für den Browser |
 | `database/schema.sql` | Datenbank, alle Tabellen und Produkte (Neuinstallation) |
 | `database/update_orders.sql` | Nur die Bestell- und Newsletter-Tabellen (für eine bestehende Datenbank) |
-| `docs/Projektkontext_README.md` | Zusammenfassung der Planung (Anforderungen, Datenmodell, Regeln) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
@@ -404,6 +421,23 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
    Häkchen: "Danke … Bestellung Nr. …", der Warenkorb ist leer.
 9. Eingeloggt bestellen, danach "Bestellungen" im Header öffnen: Die Bestellung erscheint.
 10. In phpMyAdmin prüfen: `orders`, `order_items` und (mit Häkchen) `newsletter` sind gefüllt.
+
+## Entscheidungen im Projektverlauf
+
+Wichtige Entscheidungen, damit man nachvollziehen kann, warum das Projekt so
+aufgebaut ist:
+
+| Thema | Entscheidung | Grund |
+|---|---|---|
+| Warenkorb vor dem Login | Als Gast im Browser (`localStorage`), beim Login oder bei der Registrierung in die Datenbank übernommen | `carts` braucht einen User. So geht der Gast-Warenkorb trotzdem nicht verloren. |
+| Ein Warenkorb pro User | Wird bei der Registrierung angelegt, beim Login nötigenfalls nachgeholt | Erfüllt die 1 : 1-Beziehung `users` – `carts` |
+| Produkte | Zuerst fest in `script.js`, dann in die Datenbank verschoben (`products.php`) | Preise und Namen nur an einer Stelle ändern, in phpMyAdmin |
+| `schema.sql` | Fehlte zu Beginn und wurde nach dem geplanten Datenmodell neu erstellt, danach um Produkt- und Bestelltabellen erweitert | Eine Datei, mit der sich die ganze Datenbank aufbauen lässt |
+| Bestellen | Auch als Gast möglich, mit Kontaktdaten, Lieferadresse, Pflicht-Zustimmung zu AGB und Datenschutz, Newsletter freiwillig | Realistischer Ablauf eines Online-Shops |
+| Zahlung | Nur die Zahlungsart wird gespeichert, keine Kartendaten | Kartendaten dürfen nur zertifizierte Zahlungsanbieter verarbeiten (PCI DSS) |
+| Löschregeln | Standard `CASCADE`, Ausnahmen `SET NULL` (Bestellungen bleiben) und `RESTRICT` (bestellte Produkte) | Bestellungen sind Geschäftsunterlagen und müssen erhalten bleiben |
+| Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
+| Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
 
 ## Hinweise
 
