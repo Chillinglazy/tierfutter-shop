@@ -48,12 +48,18 @@ if ($errors) {
   json_response(['error' => implode(' ', $errors)], 422);
 }
 
+// Ab hier alles in einer Transaktion: Warenkorb lesen, Bestellung speichern,
+// Warenkorb leeren, Newsletter. Geht etwas schief, wird nichts gespeichert.
+$pdo->beginTransaction();
+
 // POSITIONEN: {product_id: menge}
 $items = [];
 if ($userId) {
+  // FOR UPDATE sperrt den Warenkorb, bis die Bestellung gespeichert ist.
+  // So geht kein Produkt verloren, das gleichzeitig in einem anderen Tab hinzugefügt wird.
   $stmt = $pdo->prepare(
     'SELECT ci.product_id, ci.quantity FROM cart_items ci
-     JOIN carts c ON c.cart_id = ci.cart_id WHERE c.user_id = ?'
+     JOIN carts c ON c.cart_id = ci.cart_id WHERE c.user_id = ? FOR UPDATE'
   );
   $stmt->execute([$userId]);
   $items = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -74,6 +80,7 @@ if ($items) {
   foreach ($stmt->fetchAll() as $p) $products[(int) $p['product_id']] = $p;
 }
 if (!$products) {
+  $pdo->rollBack();
   json_response(['error' => 'Dein Warenkorb ist leer.'], 422);
 }
 
@@ -84,8 +91,7 @@ foreach ($products as $id => $p) {
 }
 $total = $totalCents / 100;
 
-// SPEICHERN: Bestellung, Positionen, Warenkorb leeren, Newsletter (alles oder nichts)
-$pdo->beginTransaction();
+// SPEICHERN: Bestellung, Positionen, Warenkorb leeren, Newsletter
 try {
   $pdo->prepare(
     'INSERT INTO orders (user_id, first_name, last_name, email, phone, street, zip, city,

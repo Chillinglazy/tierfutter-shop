@@ -17,5 +17,6 @@ foreach ($rows as &$row) {
     $row[$key] = (float) $row[$key];
   }
 }
+unset($row); // Referenz aus der Schleife lösen
 
 json_response(['products' => $rows]);

@@ -322,6 +322,8 @@ Bei eingeloggten Usern sind Name und E-Mail vorausgefüllt.
 Transaktion: Bestellung, Positionen, Warenkorb leeren, Newsletter. Geht ein
 Schritt schief, wird nichts gespeichert.
 - Eingeloggt: Die Positionen kommen aus dem Warenkorb in der Datenbank.
+  Der Warenkorb wird dabei gesperrt (`FOR UPDATE`), damit kein Produkt
+  verloren geht, das gleichzeitig in einem anderen Tab hinzugefügt wird.
 - Gast: Der Browser schickt nur Produkt-IDs und Mengen. Preise und Namen
   holt der Server immer aus der Datenbank, nie aus der Anfrage.
 
