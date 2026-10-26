@@ -21,3 +21,6 @@ config.local.php
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Lokale Exporte (z. B. Diagramme aus MySQL Workbench)
+EER-Diagramm.png
