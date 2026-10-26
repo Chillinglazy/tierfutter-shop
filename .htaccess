@@ -1,0 +1,11 @@
+# Tierfutter-Shop – Dateien sperren, die nicht zur Website gehören.
+# (includes/ und database/ haben eine eigene .htaccess.)
+
+# Versteckte Dateien und Ordner: .git, .gitignore, .htaccess
+RedirectMatch 404 /\.
+
+# Dokumentation und Editor-Einstellungen
+RedirectMatch 404 /docs(/|$)
+<FilesMatch "\.(md|code-workspace)$">
+  Require all denied
+</FilesMatch>

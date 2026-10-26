@@ -84,13 +84,20 @@ tierfutter-shop/
 ├── js/                 Verhalten im Browser
 ├── assets/             Bilder
 ├── api/                PHP-Dateien, die script.js per fetch aufruft
-├── includes/           PHP-Dateien, die nur eingebunden werden (für den Browser gesperrt)
-├── database/           SQL-Skripte für phpMyAdmin (für den Browser gesperrt)
-└── docs/               Projektdokumentation
+├── includes/           PHP-Dateien, die nur eingebunden werden (gesperrt)
+├── database/           SQL-Skripte für phpMyAdmin (gesperrt)
+├── docs/               Projektdokumentation (gesperrt)
+├── README.md           Diese Anleitung (gesperrt)
+├── .htaccess           Sperrt Dateien, die nicht zur Website gehören
+├── .gitignore          Dateien, die nicht in Git kommen
+└── Tierfutter-Shop.code-workspace   VS-Code-Arbeitsbereich (gesperrt)
 ```
 
-Regel: Alles in `api/` darf der Browser aufrufen, `includes/` und
-`database/` nicht (gesperrt mit `.htaccess`).
+Regel: Der Browser darf nur die Website aufrufen, also die HTML-Seiten,
+`css/`, `js/`, `assets/` und `api/`. Alles andere ist mit `.htaccess`
+gesperrt: `includes/`, `database/`, `docs/`, `.md`-Dateien, die
+VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
+`.gitignore`. Gesperrte Adressen antworten mit 403 oder 404.
 
 ## Dateien
 
@@ -112,7 +119,8 @@ Regel: Alles in `api/` darf der Browser aufrufen, `includes/` und
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
-| `includes/.htaccess`, `database/.htaccess` | Sperren den Ordner für den Browser |
+| `.htaccess` | Sperrt `.git`, `.gitignore`, `docs/`, `.md`-Dateien und die VS-Code-Datei für den Browser |
+| `includes/.htaccess`, `database/.htaccess` | Sperren den jeweiligen Ordner für den Browser |
 | `database/schema.sql` | Datenbank, alle Tabellen und Produkte (Neuinstallation) |
 | `database/update_orders.sql` | Nur die Bestell- und Newsletter-Tabellen (für eine bestehende Datenbank) |
 | `docs/Projektkontext_README.md` | Zusammenfassung der Planung (Anforderungen, Datenmodell, Regeln) |
