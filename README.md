@@ -135,6 +135,99 @@ PHP-Seiten, die Seite bleibt `index.html`.
 
 ## Datenmodell
 
+### ER-Diagramm
+
+GitHub zeichnet dieses Diagramm automatisch. In VS Code braucht die
+Markdown-Vorschau dafür die Erweiterung *Markdown Preview Mermaid Support*.
+
+Lesehilfe für die Linien: `||` = genau 1, `|o` = 0 oder 1, `o{` = 0 bis viele,
+`|{` = 1 bis viele. `newsletter` hat keine Verbindung, weil sich auch Gäste
+ohne Konto anmelden können.
+
+```mermaid
+erDiagram
+  users ||--o{ login_log : "meldet sich an"
+  users ||--|| carts : "besitzt"
+  carts ||--o{ cart_items : "enthält"
+  products ||--o{ cart_items : "liegt in"
+  users |o--o{ orders : "bestellt"
+  orders ||--|{ order_items : "enthält"
+  products ||--o{ order_items : "wird bestellt in"
+
+  users {
+    int user_id PK
+    varchar name
+    varchar email UK
+    varchar password_hash
+    datetime registered_at
+  }
+  login_log {
+    int log_id PK
+    int user_id FK
+    datetime login_at
+    varchar ip_address
+  }
+  products {
+    int product_id PK
+    varchar name
+    varchar description
+    decimal price
+    varchar image_path
+    varchar animal
+    varchar food_type
+    varchar special
+    varchar taste
+    varchar size
+    varchar tag
+    char color
+    char tint
+    decimal age_min
+    decimal age_max
+    decimal weight_min
+    decimal weight_max
+  }
+  carts {
+    int cart_id PK
+    int user_id FK, UK "1 Warenkorb pro User"
+    datetime created_at
+  }
+  cart_items {
+    int cart_id PK, FK
+    int product_id PK, FK
+    int quantity "1 bis 99"
+  }
+  orders {
+    int order_id PK
+    int user_id FK "NULL bei Gästen"
+    datetime ordered_at
+    varchar first_name
+    varchar last_name
+    varchar email
+    varchar phone
+    varchar street
+    char zip
+    varchar city
+    varchar payment_method
+    decimal total
+    datetime terms_accepted_at
+    datetime privacy_accepted_at
+  }
+  order_items {
+    int order_id PK, FK
+    int product_id PK, FK
+    varchar product_name "Name beim Bestellen"
+    decimal unit_price "Preis beim Bestellen"
+    int quantity "1 bis 99"
+  }
+  newsletter {
+    int newsletter_id PK
+    varchar email UK
+    datetime subscribed_at
+  }
+```
+
+### Tabellen
+
 | Tabelle | Zweck |
 |---|---|
 | `users` | `user_id`, `name`, `email` (UNIQUE), `password_hash`, `registered_at` |
