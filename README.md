@@ -145,14 +145,48 @@ Kardinalitäten:
 - `users` → `orders`: **1 : N**, optional (Gastbestellungen haben keinen User)
 - `orders` ↔ `products`: **N : M**, aufgelöst über `order_items`
 
-Löschregeln:
-- Standard: `ON DELETE CASCADE` (z. B. User gelöscht → Warenkorb gelöscht)
-- `orders.user_id`: `ON DELETE SET NULL`. Wird ein Konto gelöscht, bleibt die
-  Bestellung erhalten (Aufbewahrungspflicht), nur ohne Verknüpfung zum Konto.
-- `order_items.product_id`: `ON DELETE RESTRICT`. Ein Produkt, das schon
-  bestellt wurde, kann nicht gelöscht werden.
-- `order_items` speichert Name und Preis zum Bestellzeitpunkt. Ändert sich
-  später der Produktpreis, bleibt die alte Bestellung korrekt.
+### Löschregeln
+
+**Die Regeln gelten automatisch.** Man muss nichts konfigurieren. Sie stehen
+als `ON DELETE …` direkt in den Fremdschlüsseln der Tabellen (`schema.sql`,
+`update_orders.sql`). Sobald die Datei importiert ist, setzt MariaDB sie bei
+jedem Löschen selbst durch, egal ob in phpMyAdmin, MySQL Workbench oder per
+SQL-Befehl.
+
+**Sie reagieren nur, wenn jemand etwas löscht.** Von selbst wird nie etwas
+gelöscht, und auch die Website löscht weder Benutzer noch Produkte.
+
+| Fremdschlüssel | Regel | Bedeutung |
+|---|---|---|
+| `login_log.user_id`, `carts.user_id` | `CASCADE` | User gelöscht → Login-Protokoll und Warenkorb werden mitgelöscht |
+| `cart_items.cart_id`, `cart_items.product_id` | `CASCADE` | Warenkorb oder Produkt gelöscht → Positionen im Warenkorb werden mitgelöscht |
+| `order_items.order_id` | `CASCADE` | Bestellung gelöscht → ihre Positionen werden mitgelöscht |
+| `orders.user_id` | `SET NULL` | User gelöscht → seine Bestellungen **bleiben**, nur `user_id` wird leer (Aufbewahrungspflicht für Geschäftsunterlagen) |
+| `order_items.product_id` | `RESTRICT` | Ein Produkt, das schon bestellt wurde, **kann nicht gelöscht werden**. Die Datenbank lehnt das Löschen mit einer Fehlermeldung ab. |
+
+Beispiele in phpMyAdmin:
+
+| Du löschst … | Was automatisch passiert |
+|---|---|
+| einen Benutzer | Warenkorb und Login-Protokoll werden mitgelöscht. Seine Bestellungen bleiben, nur `user_id` wird leer. |
+| eine Bestellung | Ihre Positionen in `order_items` werden mitgelöscht. |
+| ein Produkt, das schon bestellt wurde | Die Datenbank verweigert das Löschen (Fehler #1451). |
+| ein Produkt, das nie bestellt wurde | Es wird gelöscht, auch aus allen Warenkörben. |
+
+Die Regeln ansehen: in phpMyAdmin eine Tabelle öffnen (z. B. `order_items`)
+→ *Struktur* → *Beziehungsansicht*.
+
+Ausserdem speichert `order_items` Name und Preis zum Bestellzeitpunkt. Ändert
+sich später der Produktpreis, bleibt die alte Bestellung korrekt.
+
+### SQL-Dateien
+
+| Datei | Wofür | Behalten? |
+|---|---|---|
+| `database/schema.sql` | Datenbank **komplett neu** aufsetzen (anderer PC, Lehrperson, alles zurücksetzen). Enthält alle 8 Tabellen und die Produkte. **Löscht vorhandene Daten.** | **Ja, unbedingt.** Ohne sie lässt sich die Datenbank nicht neu aufbauen. |
+| `database/update_orders.sql` | Eine **bestehende** Datenbank um `orders`, `order_items` und `newsletter` ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
+
+Frühere Versionen der Dateien speichert Git, auf GitHub unter *History*.
 
 ---
 
