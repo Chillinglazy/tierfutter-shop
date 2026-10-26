@@ -43,5 +43,5 @@ try {
   throw $e;
 }
 
-log_in($pdo, $userId, $name);
-json_response(['user' => ['name' => $name]], 201);
+log_in($pdo, $userId, $name, $email);
+json_response(['user' => ['name' => $name, 'email' => $email]], 201);

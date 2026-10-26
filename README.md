@@ -1,8 +1,8 @@
 # Tierfutter-Shop (Schulprojekt)
 
-Kleiner Online-Shop für Tierfutter mit Registrierung, Login und Warenkorb.
-Es gibt nur eine Seite (`index.html`). Nach dem Login bleibt man auf dieser
-Seite, wählt Produkte aus und legt sie in den Warenkorb.
+Kleiner Online-Shop für Tierfutter mit Registrierung, Login, Warenkorb und
+Bestellung. Der Shop ist eine einzige Seite (`index.html`), dazu kommen
+AGB und Datenschutzerklärung. Bestellen geht mit Konto oder als Gast.
 
 - **Frontend:** HTML, CSS, JavaScript (ohne Framework, ohne Build)
 - **Backend:** PHP 8 mit PDO
@@ -25,7 +25,11 @@ Hintergrund und Entscheidungen aus der Planungsphase stehen in
 | Warenkorb in der Datenbank (eingeloggt) | ✅ fertig |
 | Gast-Warenkorb im Browser, Übernahme beim Login | ✅ fertig |
 | Anzeige des eingeloggten Users im Header | ✅ fertig |
-| Bestellung / Bezahlung | ❌ nicht geplant |
+| Bestellung mit Kontaktdaten, Lieferadresse und Zahlungsart (auch als Gast) | ✅ fertig |
+| Pflicht-Zustimmung zu AGB und Datenschutz, Newsletter freiwillig | ✅ fertig |
+| "Meine Bestellungen" für eingeloggte User | ✅ fertig |
+| AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
+| Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | Admin-Rolle, "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
 ---
@@ -57,10 +61,14 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
    - `http://localhost/phpmyadmin` öffnen
    - Links oben auf das Haus-Symbol klicken (keine Datenbank auswählen)
    - Reiter *Importieren* → *Datei auswählen* → `database/schema.sql` → unten *Importieren*
-   - Links erscheint `tierfutter_shop` mit 5 Tabellen, `products` enthält 7 Produkte
+   - Links erscheint `tierfutter_shop` mit 8 Tabellen, `products` enthält 7 Produkte
    - **Achtung:** Das Skript löscht die Tabellen in `tierfutter_shop` und
-     legt sie neu an. Alle Benutzer und Warenkörbe gehen dabei verloren.
-     Die Datenbanken `phpmyadmin` und `test` werden nicht verändert.
+     legt sie neu an. Alle Benutzer, Warenkörbe und Bestellungen gehen dabei
+     verloren. Die Datenbanken `phpmyadmin` und `test` werden nicht verändert.
+   - **Bestehende Datenbank ohne Bestellungen?** Statt `schema.sql` nur
+     `database/update_orders.sql` importieren. Das Skript legt nur die
+     Tabellen `orders`, `order_items` und `newsletter` an, alle anderen Daten
+     bleiben erhalten.
 5. **Im Browser öffnen:** `http://localhost/tierfutter-shop/`
 
 ---
@@ -69,13 +77,15 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 
 ```
 tierfutter-shop/
-├── index.html          Die einzige Seite des Shops
+├── index.html          Die Shop-Seite
+├── agb.html            AGB (Mustertext)
+├── datenschutz.html    Datenschutzerklärung (Mustertext)
 ├── css/                Gestaltung
 ├── js/                 Verhalten im Browser
 ├── assets/             Bilder
 ├── api/                PHP-Dateien, die script.js per fetch aufruft
 ├── includes/           PHP-Dateien, die nur eingebunden werden (für den Browser gesperrt)
-├── database/           SQL-Skript für phpMyAdmin (für den Browser gesperrt)
+├── database/           SQL-Skripte für phpMyAdmin (für den Browser gesperrt)
 └── docs/               Projektdokumentation
 ```
 
@@ -86,9 +96,10 @@ Regel: Alles in `api/` darf der Browser aufrufen, `includes/` und
 
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Aufbau der Seite, Filter, Dialoge für Warenkorb und Login/Registrierung |
-| `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Smartphone-Ansicht |
-| `js/script.js` | Produkte laden und anzeigen, Filter, Warenkorb, Login-Ablauf |
+| `index.html` | Aufbau der Seite, Filter, Dialoge für Warenkorb, Login/Registrierung, Bestellformular und Bestellungen |
+| `agb.html`, `datenschutz.html` | AGB und Datenschutzerklärung (Mustertexte, keine Rechtsberatung) |
+| `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Formulare, Smartphone-Ansicht |
+| `js/script.js` | Produkte laden und anzeigen, Filter, Warenkorb, Login-Ablauf, Bestellen |
 | `assets/logo.png` | Shop-Logo |
 | `api/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
 | `api/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
@@ -96,11 +107,14 @@ Regel: Alles in `api/` darf der Browser aufrufen, `includes/` und
 | `api/logout.php` | Session beenden |
 | `api/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
 | `api/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
+| `api/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
+| `api/orders.php` | Bestellungen des eingeloggten Users |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
 | `includes/.htaccess`, `database/.htaccess` | Sperren den Ordner für den Browser |
-| `database/schema.sql` | Datenbank, Tabellen und Produkte |
+| `database/schema.sql` | Datenbank, alle Tabellen und Produkte (Neuinstallation) |
+| `database/update_orders.sql` | Nur die Bestell- und Newsletter-Tabellen (für eine bestehende Datenbank) |
 | `docs/Projektkontext_README.md` | Zusammenfassung der Planung (Anforderungen, Datenmodell, Regeln) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
@@ -120,12 +134,25 @@ PHP-Seiten, die Seite bleibt `index.html`.
 | `products` | `product_id`, `name`, `description`, `price`, `image_path` sowie Filter- und Anzeigedaten: `animal`, `food_type`, `special`, `taste`, `size`, `tag`, `color`, `tint`, `age_min`, `age_max`, `weight_min`, `weight_max` |
 | `carts` | Ein Warenkorb pro User: `cart_id`, `user_id` (UNIQUE), `created_at` |
 | `cart_items` | Positionen: PK (`cart_id`, `product_id`), `quantity` (1 bis 99) |
+| `orders` | Bestellung: `order_id`, `user_id` (leer bei Gästen), `ordered_at`, Kontakt (`first_name`, `last_name`, `email`, `phone`), Adresse (`street`, `zip`, `city`), `payment_method`, `total`, `terms_accepted_at`, `privacy_accepted_at` |
+| `order_items` | Positionen: PK (`order_id`, `product_id`), `product_name`, `unit_price`, `quantity` |
+| `newsletter` | Anmeldungen: `newsletter_id`, `email` (UNIQUE), `subscribed_at` |
 
 Kardinalitäten:
 - `users` → `login_log`: **1 : N**
 - `users` → `carts`: **1 : 1** (UNIQUE auf `carts.user_id`)
 - `carts` ↔ `products`: **N : M**, aufgelöst über `cart_items`
-- Alle Fremdschlüssel mit `ON DELETE CASCADE`
+- `users` → `orders`: **1 : N**, optional (Gastbestellungen haben keinen User)
+- `orders` ↔ `products`: **N : M**, aufgelöst über `order_items`
+
+Löschregeln:
+- Standard: `ON DELETE CASCADE` (z. B. User gelöscht → Warenkorb gelöscht)
+- `orders.user_id`: `ON DELETE SET NULL`. Wird ein Konto gelöscht, bleibt die
+  Bestellung erhalten (Aufbewahrungspflicht), nur ohne Verknüpfung zum Konto.
+- `order_items.product_id`: `ON DELETE RESTRICT`. Ein Produkt, das schon
+  bestellt wurde, kann nicht gelöscht werden.
+- `order_items` speichert Name und Preis zum Bestellzeitpunkt. Ändert sich
+  später der Produktpreis, bleibt die alte Bestellung korrekt.
 
 ---
 
@@ -151,6 +178,20 @@ immer der aktuelle Warenkorb aus der Datenbank.
 
 **Logout:** `logout.php` beendet die Session. Der Warenkorb bleibt in der
 Datenbank und ist beim nächsten Login wieder da.
+
+**Bestellen:** Im Warenkorb auf "Jetzt bestellen". Das Formular fragt
+Kontakt, Lieferadresse und Zahlungsart ab. AGB und Datenschutz müssen
+angehakt sein, der Newsletter ist freiwillig und nicht vorausgewählt.
+Bei eingeloggten Usern sind Name und E-Mail vorausgefüllt.
+`order.php` prüft alle Eingaben noch einmal und speichert in einer
+Transaktion: Bestellung, Positionen, Warenkorb leeren, Newsletter. Geht ein
+Schritt schief, wird nichts gespeichert.
+- Eingeloggt: Die Positionen kommen aus dem Warenkorb in der Datenbank.
+- Gast: Der Browser schickt nur Produkt-IDs und Mengen. Preise und Namen
+  holt der Server immer aus der Datenbank, nie aus der Anfrage.
+
+**Meine Bestellungen:** Eingeloggte User sehen im Header den Knopf
+"Bestellungen" mit allen früheren Bestellungen (`orders.php`).
 
 ### Warenkorb-API (`api/cart.php`)
 
@@ -182,6 +223,12 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
   einem Produktnamen erscheint deshalb als Text. In PHP-Dateien, die selbst
   HTML ausgeben, wäre dafür `htmlspecialchars` nötig.
 - Die Farben eines Produkts müssen das Format `#rrggbb` haben (Prüfung in der Datenbank).
+- **Keine Kartendaten:** Gespeichert wird nur die Zahlungsart. Kreditkarten-
+  nummern dürfen nur zertifizierte Zahlungsanbieter verarbeiten (PCI DSS).
+  Ein echter Shop würde zu deren Seite weiterleiten.
+- Zustimmung zu AGB und Datenschutz wird im Browser **und** in `order.php`
+  geprüft und mit Zeitpunkt in `orders` gespeichert (Nachweis).
+- Newsletter nur mit ausdrücklicher Zustimmung (Opt-in), Häkchen nicht vorausgewählt.
 - Technische Fehlermeldungen landen im PHP-Fehlerlog, nicht im Browser
 
 ---
@@ -216,10 +263,16 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 5. Mit falschem Passwort einloggen: "E-Mail oder Passwort ist falsch."
 6. In phpMyAdmin prüfen: `users`, `carts`, `login_log`, `cart_items` sind gefüllt.
 7. In phpMyAdmin den Preis eines Produkts ändern, Website neu laden: Der neue Preis erscheint.
+8. Als Gast bestellen, ohne AGB-Häkchen: Bestellen ist nicht möglich. Mit
+   Häkchen: "Danke … Bestellung Nr. …", der Warenkorb ist leer.
+9. Eingeloggt bestellen, danach "Bestellungen" im Header öffnen: Die Bestellung erscheint.
+10. In phpMyAdmin prüfen: `orders`, `order_items` und (mit Häkchen) `newsletter` sind gefüllt.
 
 ## Hinweise
 
-- Produkte und Preise sind Beispiele. Bestellungen und Zahlungen gibt es nicht.
+- Schulprojekt: Produkte und Preise sind Beispiele. Bestellungen werden
+  gespeichert, aber nicht geliefert und nicht bezahlt.
+- AGB und Datenschutzerklärung sind Mustertexte und keine Rechtsberatung.
 - Gewicht und Alter dienen nur der beispielhaften Produktauswahl, nicht als Fütterungsempfehlung.
 - Ohne Server (Datei direkt geöffnet) gibt es keine Produkte, weil sie aus
   der Datenbank kommen. Die Seite zeigt dann einen Hinweis, dass der Server fehlt.

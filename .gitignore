@@ -6,6 +6,7 @@ config.local.php
 # Datenbank-Exporte mit echten Benutzerdaten (schema.sql bleibt in Git)
 *.sql
 !schema.sql
+!update_orders.sql
 
 # Logs und temporäre Dateien
 *.log

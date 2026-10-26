@@ -66,10 +66,11 @@ function require_login(): int {
 }
 
 // Login durchführen: neue Session-ID, Warenkorb sicherstellen, Login protokollieren.
-function log_in(PDO $pdo, int $userId, string $name): void {
+function log_in(PDO $pdo, int $userId, string $name, string $email): void {
   session_regenerate_id(true);
   $_SESSION['user_id'] = $userId;
   $_SESSION['name'] = $name;
+  $_SESSION['email'] = $email; // zum Vorausfüllen des Bestellformulars
 
   // Jeder User hat genau einen Warenkorb (falls er noch fehlt, jetzt anlegen).
   $pdo->prepare('INSERT IGNORE INTO carts (user_id) VALUES (?)')->execute([$userId]);

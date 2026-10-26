@@ -525,8 +525,105 @@ dialog .btn {
   color: var(--muted)
 }
 
-#authMessage {
+#authMessage,
+#checkoutMessage {
   font-size: 13px
+}
+
+/* BESTELLFORMULAR UND BESTELLUNGEN */
+dialog.wide {
+  width: 620px;
+  max-height: 90vh;
+  overflow-y: auto
+}
+
+dialog fieldset {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px 2px;
+  margin: 0 0 16px
+}
+
+dialog legend {
+  font-weight: bold;
+  font-size: 13px;
+  padding: 0 6px
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px
+}
+
+.zip-row {
+  grid-template-columns: 110px 1fr
+}
+
+label.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1.5
+}
+
+label.check input {
+  width: auto;
+  margin: 3px 0 0;
+  accent-color: var(--green)
+}
+
+label.check a,
+.copyright a {
+  text-decoration: underline
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap
+}
+
+.order {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  font-size: 14px
+}
+
+.order-head,
+.order-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0
+}
+
+.order-head {
+  margin-bottom: 6px
+}
+
+.order small {
+  color: var(--muted)
+}
+
+/* AGB UND DATENSCHUTZ */
+.legal {
+  max-width: 760px;
+  margin: 20px auto 60px;
+  line-height: 1.7
+}
+
+.legal h1 {
+  font-size: 40px
+}
+
+.legal h2 {
+  font-size: 22px;
+  margin-top: 32px
 }
 
 .demo {
@@ -571,6 +668,14 @@ dialog .btn {
 }
 
 @media(max-width:600px) {
+  .form-row {
+    grid-template-columns: 1fr
+  }
+
+  .zip-row {
+    grid-template-columns: 90px 1fr
+  }
+
   header {
     padding: 12px 16px;
     flex-wrap: wrap

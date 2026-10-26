@@ -40,6 +40,9 @@
     <button class="btn solid" id="loginBtn" onclick="openAuth('login')">
      Login ↗
     </button>
+    <button class="btn" hidden="" id="ordersBtn" onclick="openOrders()">
+     Bestellungen
+    </button>
     <button class="btn" hidden="" id="logoutBtn" onclick="logout()">
      Logout
     </button>
@@ -258,7 +261,15 @@
     </div>
    </div>
    <div class="copyright">
-    © 2026 Tierfutter-Shop Bargen · Shop-Vorschau mit Beispielprodukten und Beispielpreisen. Keine Bestellungen oder Zahlungen möglich.
+    © 2026 Tierfutter-Shop Bargen · Schulprojekt mit Beispielprodukten und Beispielpreisen. Bestellungen werden gespeichert, aber nicht geliefert oder bezahlt.
+    ·
+    <a href="agb.html">
+     AGB
+    </a>
+    ·
+    <a href="datenschutz.html">
+     Datenschutz
+    </a>
    </div>
   </footer>
   <dialog id="cart">
@@ -273,11 +284,140 @@
    <p id="total">
    </p>
    <p class="demo" id="cartNote">
-    Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Nach dem Login wird er in dein Konto übernommen. Eine Bestellung ist noch nicht möglich.
+    Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Du kannst auch ohne Konto bestellen.
    </p>
-   <button class="btn solid" onclick="document.querySelector('#cart').close()">
-    Weiter stöbern
+   <div class="dialog-buttons">
+    <button class="btn solid" id="orderBtn" onclick="openCheckout()">
+     Jetzt bestellen
+    </button>
+    <button class="btn" onclick="document.querySelector('#cart').close()">
+     Weiter stöbern
+    </button>
+   </div>
+  </dialog>
+  <dialog class="wide" id="checkout">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">
+    ×
    </button>
+   <h2>
+    Bestellung abschliessen
+   </h2>
+   <form id="checkoutForm">
+    <fieldset>
+     <legend>
+      Kontakt
+     </legend>
+     <div class="form-row">
+      <label>
+       Vorname
+       <input autocomplete="given-name" id="coFirst" maxlength="50" required=""/>
+      </label>
+      <label>
+       Nachname
+       <input autocomplete="family-name" id="coLast" maxlength="50" required=""/>
+      </label>
+     </div>
+     <div class="form-row">
+      <label>
+       E-Mail
+       <input autocomplete="email" id="coEmail" maxlength="255" required="" type="email"/>
+      </label>
+      <label>
+       Telefon
+       <input autocomplete="tel" id="coPhone" maxlength="30" placeholder="z. B. 079 123 45 67" required="" type="tel"/>
+      </label>
+     </div>
+    </fieldset>
+    <fieldset>
+     <legend>
+      Lieferadresse
+     </legend>
+     <label>
+      Strasse und Nr.
+      <input autocomplete="street-address" id="coStreet" maxlength="100" required=""/>
+     </label>
+     <div class="form-row zip-row">
+      <label>
+       PLZ
+       <input autocomplete="postal-code" id="coZip" inputmode="numeric" maxlength="4" pattern="[1-9][0-9]{3}" placeholder="8225" required=""/>
+      </label>
+      <label>
+       Ort
+       <input autocomplete="address-level2" id="coCity" maxlength="50" required=""/>
+      </label>
+     </div>
+    </fieldset>
+    <fieldset>
+     <legend>
+      Zahlungsart
+     </legend>
+     <label class="check">
+      <input checked="" name="payment" type="radio" value="Rechnung"/>
+      Rechnung
+     </label>
+     <label class="check">
+      <input name="payment" type="radio" value="TWINT"/>
+      TWINT
+     </label>
+     <label class="check">
+      <input name="payment" type="radio" value="Kreditkarte"/>
+      Kreditkarte
+     </label>
+     <p class="demo" hidden="" id="cardNote">
+      Kartendaten werden hier nicht eingegeben oder gespeichert. In einem echten Shop würdest du jetzt zur sicheren Seite eines Zahlungsanbieters weitergeleitet.
+     </p>
+    </fieldset>
+    <label class="check">
+     <input id="coTerms" required="" type="checkbox"/>
+     <span>
+      Ich akzeptiere die
+      <a href="agb.html" target="_blank">AGB</a>. *
+     </span>
+    </label>
+    <label class="check">
+     <input id="coPrivacy" required="" type="checkbox"/>
+     <span>
+      Ich habe die
+      <a href="datenschutz.html" target="_blank">
+       Datenschutzerklärung
+      </a>
+      gelesen und bin mit der Verarbeitung meiner Daten für diese Bestellung einverstanden. *
+     </span>
+    </label>
+    <label class="check">
+     <input id="coNewsletter" type="checkbox"/>
+     <span>
+      Ja, ich möchte den Newsletter per E-Mail erhalten (freiwillig, jederzeit abbestellbar).
+     </span>
+    </label>
+    <p id="checkoutTotal">
+    </p>
+    <p class="demo">
+     * Pflichtfeld. Schulprojekt: Die Bestellung wird gespeichert, aber nicht geliefert und nicht bezahlt.
+    </p>
+    <button class="btn solid" id="checkoutSubmit" type="submit">
+     Zahlungspflichtig bestellen
+    </button>
+    <p id="checkoutMessage" role="status">
+    </p>
+   </form>
+   <div hidden="" id="checkoutDone">
+    <p id="checkoutDoneText">
+    </p>
+    <button class="btn solid" onclick="document.querySelector('#checkout').close()">
+     Weiter stöbern
+    </button>
+   </div>
+  </dialog>
+  <dialog class="wide" id="orders">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">
+    ×
+   </button>
+   <h2>
+    Meine Bestellungen
+   </h2>
+   <div id="ordersList">
+   </div>
   </dialog>
   <dialog id="auth">
    <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">

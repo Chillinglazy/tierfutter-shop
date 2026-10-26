@@ -125,7 +125,12 @@ function renderCart() {
 
   document.getElementById('cartItems').innerHTML = items.length ? items.map(p => `<div class="cart-row"><div><strong>${esc(p.name)}</strong><br><small>${money(p.price)} · ${esc(p.size)}</small></div><div class="qty"><button onclick="change(${p.product_id},-1)" aria-label="Menge reduzieren">−</button>${basket[p.product_id]}<button onclick="change(${p.product_id},1)" aria-label="Menge erhöhen">+</button></div></div>`).join('') : 'Dein Warenkorb ist noch leer.';
 
-  document.getElementById('total').textContent = 'Gesamt: ' + money(items.reduce((s, p) => s + p.price * basket[p.product_id], 0))
+  document.getElementById('total').textContent = 'Gesamt: ' + money(cartTotal());
+  document.getElementById('orderBtn').hidden = !items.length
+}
+
+function cartTotal() {
+  return products.filter(p => basket[p.product_id]).reduce((s, p) => s + p.price * basket[p.product_id], 0)
 }
 
 function openCart() {
@@ -205,9 +210,85 @@ function showUser() {
   info.textContent = currentUser ? 'Hallo, ' + currentUser.name : '';
   info.hidden = !currentUser;
   document.getElementById('logoutBtn').hidden = !currentUser;
+  document.getElementById('ordersBtn').hidden = !currentUser;
   document.getElementById('registerBtn').hidden = !!currentUser;
   document.getElementById('loginBtn').hidden = !!currentUser;
-  document.getElementById('cartNote').textContent = currentUser ? 'Dein Warenkorb ist in deinem Konto gespeichert. Eine Bestellung ist noch nicht möglich.' : 'Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Nach dem Login wird er in dein Konto übernommen. Eine Bestellung ist noch nicht möglich.'
+  document.getElementById('cartNote').textContent = currentUser ? 'Dein Warenkorb ist in deinem Konto gespeichert.' : 'Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Du kannst auch ohne Konto bestellen.'
+}
+
+// BESTELLEN: Formular öffnen, bei eingeloggten Usern Name und E-Mail vorausfüllen.
+function openCheckout() {
+  const form = document.getElementById('checkoutForm');
+  form.reset();
+  form.hidden = false;
+  document.getElementById('checkoutDone').hidden = true;
+  document.getElementById('checkoutMessage').textContent = '';
+  document.getElementById('cardNote').hidden = true;
+  if (currentUser) {
+    const [first, ...rest] = currentUser.name.split(' ');
+    document.getElementById('coFirst').value = first;
+    document.getElementById('coLast').value = rest.join(' ');
+    document.getElementById('coEmail').value = currentUser.email || ''
+  }
+  document.getElementById('checkoutTotal').textContent = 'Gesamt: ' + money(cartTotal());
+  document.getElementById('cart').close();
+  document.getElementById('checkout').showModal()
+}
+
+// Hinweis bei Kreditkarte: keine Kartendaten in diesem Shop
+document.querySelectorAll('input[name="payment"]').forEach(r => r.addEventListener('change', () => {
+  document.getElementById('cardNote').hidden = document.querySelector('input[name="payment"]:checked').value !== 'Kreditkarte'
+}));
+
+document.getElementById('checkoutForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = id => document.getElementById(id).value;
+  const button = document.getElementById('checkoutSubmit');
+  const data = {
+    first_name: v('coFirst'),
+    last_name: v('coLast'),
+    email: v('coEmail'),
+    phone: v('coPhone'),
+    street: v('coStreet'),
+    zip: v('coZip'),
+    city: v('coCity'),
+    payment_method: document.querySelector('input[name="payment"]:checked').value,
+    terms: document.getElementById('coTerms').checked,
+    privacy: document.getElementById('coPrivacy').checked,
+    newsletter: document.getElementById('coNewsletter').checked,
+    items: basket // nur für Gäste, Preise rechnet der Server
+  };
+  button.disabled = true;
+  try {
+    const res = await api('order.php', data);
+    basket = {};
+    save();
+    e.target.hidden = true;
+    document.getElementById('checkoutDoneText').textContent = '♡ Danke, ' + data.first_name + '! Deine Bestellung Nr. ' + res.order_id + ' über ' + money(res.total) + ' ist eingegangen.';
+    document.getElementById('checkoutDone').hidden = false
+  } catch (err) {
+    document.getElementById('checkoutMessage').textContent = err.message
+  } finally {
+    button.disabled = false
+  }
+});
+
+// MEINE BESTELLUNGEN: Liste aus orders.php
+async function openOrders() {
+  const list = document.getElementById('ordersList');
+  list.textContent = 'Wird geladen …';
+  document.getElementById('orders').showModal();
+  try {
+    const { orders } = await api('orders.php');
+    list.innerHTML = orders.length ? orders.map(o => `<div class="order">
+      <div class="order-head"><strong>Nr. ${o.order_id}</strong><span>${new Date(o.ordered_at.replace(' ', 'T')).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' })}</span></div>
+      ${o.items.map(i => `<div class="order-line"><span>${i.quantity} × ${esc(i.product_name)}</span><span>${money(i.unit_price * i.quantity)}</span></div>`).join('')}
+      <div class="order-line"><strong>Gesamt</strong><strong>${money(o.total)}</strong></div>
+      <small>${esc(o.payment_method)}</small>
+      </div>`).join('') : 'Du hast noch keine Bestellungen.'
+  } catch (err) {
+    list.textContent = err.message
+  }
 }
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.target === d) {
