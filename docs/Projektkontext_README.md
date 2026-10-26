@@ -2,7 +2,7 @@
 
 Dieses Dokument fasst den bisherigen Chat zusammen, damit in Claude Code nahtlos weitergearbeitet werden kann.
 
-> **Stand 25.10.2026:** Die offenen Punkte und PHP-Dateien unten sind umgesetzt. Den aktuellen Stand zeigt die [`README.md`](README.md).
+> **Stand 25.10.2026:** Die offenen Punkte und PHP-Dateien unten sind umgesetzt. Den aktuellen Stand zeigt die [`README.md`](../README.md). Seit 26.10.2026 liegen die Dateien in Unterordnern (`api/`, `includes/`, `database/` …), siehe Ordnerstruktur in der README.
 > Korrekturen zu diesem Dokument:
 > - Die Produkte standen in `script.js` (Array `products`), nicht im HTML.
 > - `schema.sql` war nicht im Ordner und wurde nach dem Datenmodell unten neu erstellt.

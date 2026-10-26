@@ -9,7 +9,7 @@ Seite, wählt Produkte aus und legt sie in den Warenkorb.
 - **Datenbank:** MySQL / MariaDB (XAMPP), Datenbank `tierfutter_shop`
 
 Hintergrund und Entscheidungen aus der Planungsphase stehen in
-[`Projektkontext_README.md`](Projektkontext_README.md).
+[`docs/Projektkontext_README.md`](docs/Projektkontext_README.md).
 
 ---
 
@@ -17,9 +17,9 @@ Hintergrund und Entscheidungen aus der Planungsphase stehen in
 
 | Bereich | Stand |
 |---|---|
-| Landingpage mit Produktfilter (`index.html`, `style.css`, `script.js`) | ✅ fertig |
-| Produkte aus der Datenbank (`products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
-| Datenbankschema mit echten Produkten (`schema.sql`) | ✅ fertig, in MariaDB 10.4 (XAMPP) getestet |
+| Landingpage mit Produktfilter (`index.html`, `css/style.css`, `js/script.js`) | ✅ fertig |
+| Produkte aus der Datenbank (`api/products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
+| Datenbankschema mit echten Produkten (`database/schema.sql`) | ✅ fertig, in MariaDB 10.4 (XAMPP) getestet |
 | Registrierung (Name, E-Mail, Passwort) | ✅ fertig |
 | Login / Logout mit Session und Login-Protokoll | ✅ fertig |
 | Warenkorb in der Datenbank (eingeloggt) | ✅ fertig |
@@ -47,15 +47,16 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
    Wird der Projektordner verschoben oder umbenannt, die Verknüpfung in
    `htdocs` löschen und neu anlegen. Beim Löschen der Verknüpfung bleibt der
    Projektordner erhalten.
-2. **Zugangsdaten anlegen:** `config.local.example.php` kopieren und die
-   Kopie in `config.local.php` umbenennen. Für XAMPP passen die Werte so
+2. **Zugangsdaten anlegen:** Im Ordner `includes/` die Datei
+   `config.local.example.php` kopieren und die Kopie in `config.local.php`
+   umbenennen. Für XAMPP passen die Werte so
    (Benutzer `root`, kein Passwort). Sonst Benutzer und Passwort dort ändern.
    `config.local.php` wird nicht in Git gespeichert.
 3. **XAMPP Control Panel:** Apache und MySQL starten.
 4. **Datenbank importieren** mit phpMyAdmin:
    - `http://localhost/phpmyadmin` öffnen
    - Links oben auf das Haus-Symbol klicken (keine Datenbank auswählen)
-   - Reiter *Importieren* → *Datei auswählen* → `schema.sql` → unten *Importieren*
+   - Reiter *Importieren* → *Datei auswählen* → `database/schema.sql` → unten *Importieren*
    - Links erscheint `tierfutter_shop` mit 5 Tabellen, `products` enthält 7 Produkte
    - **Achtung:** Das Skript löscht die Tabellen in `tierfutter_shop` und
      legt sie neu an. Alle Benutzer und Warenkörbe gehen dabei verloren.
@@ -64,30 +65,49 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 
 ---
 
+## Ordnerstruktur
+
+```
+tierfutter-shop/
+├── index.html          Die einzige Seite des Shops
+├── css/                Gestaltung
+├── js/                 Verhalten im Browser
+├── assets/             Bilder
+├── api/                PHP-Dateien, die script.js per fetch aufruft
+├── includes/           PHP-Dateien, die nur eingebunden werden (für den Browser gesperrt)
+├── database/           SQL-Skript für phpMyAdmin (für den Browser gesperrt)
+└── docs/               Projektdokumentation
+```
+
+Regel: Alles in `api/` darf der Browser aufrufen, `includes/` und
+`database/` nicht (gesperrt mit `.htaccess`).
+
 ## Dateien
 
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Aufbau der Seite, Filter, Dialoge für Warenkorb und Login/Registrierung |
-| `style.css` | Farben (oben unter `:root`), Schriften, Abstände, Smartphone-Ansicht |
-| `script.js` | Produkte laden und anzeigen, Filter, Warenkorb, Login-Ablauf |
+| `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Smartphone-Ansicht |
+| `js/script.js` | Produkte laden und anzeigen, Filter, Warenkorb, Login-Ablauf |
 | `assets/logo.png` | Shop-Logo |
-| `schema.sql` | Datenbank, Tabellen und Produkte |
-| `config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
-| `config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
-| `config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
+| `api/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
+| `api/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
+| `api/login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
+| `api/logout.php` | Session beenden |
+| `api/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
+| `api/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
+| `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
+| `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
+| `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
+| `includes/.htaccess`, `database/.htaccess` | Sperren den Ordner für den Browser |
+| `database/schema.sql` | Datenbank, Tabellen und Produkte |
+| `docs/Projektkontext_README.md` | Zusammenfassung der Planung (Anforderungen, Datenmodell, Regeln) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
-| `register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
-| `login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
-| `logout.php` | Session beenden |
-| `session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
-| `products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
-| `cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
-| `Projektkontext_README.md` | Zusammenfassung der Planung (Anforderungen, Datenmodell, Regeln) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
-Alle PHP-Dateien antworten mit JSON und werden von `script.js` per `fetch`
-aufgerufen. Es gibt keine eigenen PHP-Seiten, die Seite bleibt `index.html`.
+Alle PHP-Dateien in `api/` antworten mit JSON und werden von `js/script.js`
+über die Funktion `api()` per `fetch` aufgerufen. Es gibt keine eigenen
+PHP-Seiten, die Seite bleibt `index.html`.
 
 ---
 
@@ -132,11 +152,11 @@ immer der aktuelle Warenkorb aus der Datenbank.
 **Logout:** `logout.php` beendet die Session. Der Warenkorb bleibt in der
 Datenbank und ist beim nächsten Login wieder da.
 
-### Warenkorb-API (`cart.php`)
+### Warenkorb-API (`api/cart.php`)
 
 | Anfrage | Wirkung |
 |---|---|
-| `GET cart.php` | Warenkorb laden |
+| `GET api/cart.php` | Warenkorb laden |
 | `POST {"action":"add","product_id":1,"quantity":1}` | Hinzufügen (`quantity` optional) |
 | `POST {"action":"change","product_id":1,"delta":-1}` | Menge ändern, bei 0 entfernen |
 | `POST {"action":"remove","product_id":1}` | Entfernen |
@@ -179,7 +199,7 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
   - Änderungen in phpMyAdmin stehen nicht in `schema.sql`. Wer sie behalten
     will, trägt sie dort auch ein. Ein neuer Import setzt sonst alle
     Produkte auf den Stand von `schema.sql` zurück.
-- **Farben:** oben in `style.css` unter `:root`
+- **Farben:** oben in `css/style.css` unter `:root`
 - **Adresse und E-Mail:** im Footer von `index.html`
 - **Einrückung:** HTML, CSS, JavaScript und PHP mit zwei Leerzeichen.
   Einige produktspezifische Farben und Abstände stehen direkt im HTML

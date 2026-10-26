@@ -1,6 +1,6 @@
 <?php
 // LOGIN: E-Mail und Passwort prüfen, Session starten.
-require 'config.php';
+require __DIR__ . '/../includes/config.php';
 
 $data = read_json_post();
 $email = strtolower(trim((string) ($data['email'] ?? '')));

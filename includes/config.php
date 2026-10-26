@@ -1,6 +1,6 @@
 <?php
 // Tierfutter-Shop – Datenbankverbindung, Session und Hilfsfunktionen.
-// Wird von allen PHP-Endpunkten mit require 'config.php' eingebunden.
+// Wird von allen PHP-Endpunkten in api/ mit require eingebunden.
 
 const MAX_QUANTITY = 99; // gleich wie CHECK in schema.sql
 
@@ -13,7 +13,7 @@ set_exception_handler(function (Throwable $e) {
 });
 
 // DATENBANK-ZUGANGSDATEN: stehen in config.local.php (nicht in Git).
-// Vorlage: config.local.example.php kopieren und in config.local.php umbenennen.
+// Vorlage: config.local.example.php (gleicher Ordner) kopieren und in config.local.php umbenennen.
 if (!is_file(__DIR__ . '/config.local.php')) {
   json_response(['error' => 'config.local.php fehlt. Siehe README, Abschnitt Installation.'], 500);
 }

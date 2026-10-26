@@ -14,11 +14,11 @@ const money = n => 'CHF ' + n.toFixed(2);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ids = ['animal', 'type', 'special', 'taste', 'weight', 'age'];
 
-// SERVER: PHP-Endpunkt aufrufen. Mit data als POST (JSON), sonst GET.
-async function api(url, data) {
+// SERVER: PHP-Datei im Ordner api/ aufrufen, z. B. api('cart.php'). Mit data als POST (JSON), sonst GET.
+async function api(file, data) {
   let res, json;
   try {
-    res = await fetch(url, data ? {
+    res = await fetch('api/' + file, data ? {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

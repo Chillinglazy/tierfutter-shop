@@ -1,6 +1,6 @@
 <?php
 // LOGOUT: Session-Daten, Session-Cookie und Session löschen.
-require 'config.php';
+require __DIR__ . '/../includes/config.php';
 
 read_json_post();
 

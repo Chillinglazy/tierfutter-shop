@@ -1,0 +1,2 @@
+# Dieser Ordner wird nur von PHP eingebunden. Direkter Aufruf im Browser ist gesperrt.
+Require all denied

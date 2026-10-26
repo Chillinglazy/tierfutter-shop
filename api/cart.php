@@ -6,7 +6,7 @@
 //   POST {action: 'remove', product_id}         Produkt entfernen
 //   POST {action: 'merge', items: {id: menge}}  Gast-Warenkorb nach dem Login übernehmen
 // Antwort immer: {items: {product_id: quantity, ...}}
-require 'config.php';
+require __DIR__ . '/../includes/config.php';
 
 $userId = require_login();
 

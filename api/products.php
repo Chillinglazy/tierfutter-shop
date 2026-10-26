@@ -1,7 +1,7 @@
 <?php
 // PRODUKTE: Alle Produkte aus der Datenbank für die Website (ohne Login).
 // Antwort: {products: [{product_id, name, description, price, ...}, ...]}
-require 'config.php';
+require __DIR__ . '/../includes/config.php';
 
 $rows = $pdo->query(
   'SELECT product_id, name, description, price, image_path, animal, food_type, special, taste,

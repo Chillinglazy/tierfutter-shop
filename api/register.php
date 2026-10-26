@@ -1,6 +1,6 @@
 <?php
 // REGISTRIERUNG: User und Warenkorb anlegen, danach direkt einloggen.
-require 'config.php';
+require __DIR__ . '/../includes/config.php';
 
 $data = read_json_post();
 $name = trim((string) ($data['name'] ?? ''));
