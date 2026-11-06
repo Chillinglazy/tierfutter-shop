@@ -51,6 +51,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | 14 Diät-Produkte (Hund und Katze) für den Ernährungsplan | ✅ fertig |
 | Ernährungsplan oben auf der Startseite, Auswahl mit Kacheln, Knopf im Hero-Bereich | ✅ fertig |
 | "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/saved_plans.php`) | ✅ fertig |
+| Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | Admin-Rolle, "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
@@ -84,7 +85,7 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
    - `http://localhost/phpmyadmin` öffnen
    - Links oben auf das Haus-Symbol klicken (keine Datenbank auswählen)
    - Reiter *Importieren* → *Datei auswählen* → `database/schema.sql` → unten *Importieren*
-   - Links erscheint `tierfutter_shop` mit 12 Tabellen, `products` enthält 21 Produkte
+   - Links erscheint `tierfutter_shop` mit 14 Tabellen, `products` enthält 21 Produkte
    - **Achtung:** Das Skript löscht die Tabellen in `tierfutter_shop` und
      legt sie neu an. Alle Benutzer, Warenkörbe und Bestellungen gehen dabei
      verloren. Die Datenbanken `phpmyadmin` und `test` werden nicht verändert.
@@ -94,10 +95,12 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
      bleiben erhalten.
    - **Bestehende Datenbank ohne Ernährungsplan?** Zusätzlich
      `database/update_ernaehrungsplan.sql` importieren. Das Skript legt
-     `conditions`, `plan_steps`, `product_conditions` und `saved_plans` an und
-     ergänzt die Diät-Produkte (IDs 9 bis 22). Alle anderen Daten bleiben
-     erhalten. Wer die erste Version schon importiert hat, importiert die
-     Datei einfach noch einmal (Symbole und `saved_plans` kommen dazu).
+     `conditions`, `plan_steps`, `product_conditions`, `combination_notes`,
+     `saved_plans` und `saved_plan_conditions` an und ergänzt die
+     Diät-Produkte (IDs 9 bis 22). Alle anderen Daten bleiben erhalten. Wer
+     eine ältere Version schon importiert hat, importiert die Datei einfach
+     noch einmal: Sie rüstet fehlende Teile nach und übernimmt gespeicherte
+     Pläne in die neue Struktur.
 5. **Im Browser öffnen:** `http://localhost/tierfutter-shop/`
 
 ---
@@ -144,7 +147,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `api/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
 | `api/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
 | `api/orders.php` | Bestellungen des eingeloggten Users |
-| `api/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für Kategorie + Tier mit passenden Produkt-IDs (ohne Login) |
+| `api/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
 | `api/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
@@ -186,8 +189,10 @@ erDiagram
   conditions ||--|{ plan_steps : "besteht aus"
   conditions ||--o{ product_conditions : "empfiehlt"
   products ||--o{ product_conditions : "passt zu"
+  conditions ||--o{ combination_notes : "Hinweis zu Kombination"
   users ||--o{ saved_plans : "speichert"
-  conditions ||--o{ saved_plans : "wird gespeichert als"
+  saved_plans ||--|{ saved_plan_conditions : "enthält"
+  conditions ||--o{ saved_plan_conditions : "ist gewählt in"
 
   users {
     int user_id PK
@@ -278,13 +283,21 @@ erDiagram
     int product_id PK, FK
     int condition_id PK, FK
   }
+  combination_notes {
+    int condition_a PK, FK "kleinere ID"
+    int condition_b PK, FK
+    varchar note
+  }
   saved_plans {
     int plan_id PK
     int user_id FK
-    int condition_id FK
     varchar animal
     varchar pet_name
     datetime created_at
+  }
+  saved_plan_conditions {
+    int plan_id PK, FK
+    int condition_id PK, FK
   }
 ```
 
@@ -303,7 +316,9 @@ erDiagram
 | `conditions` | Krankheit/Kategorie für den Ernährungsplan: `condition_id`, `name` (UNIQUE), `icon` (Symbol auf der Kachel), `goal` (Ziel), `sort_order` |
 | `plan_steps` | Zeilen eines Plans: `condition_id`, `animal` (leer = Hund und Katze, sonst nur dieses Tier), `label` (Futter, Tagesablauf, Leckerlis, Vermeiden, Kontrolle, Wichtig), `text`, `sort_order` |
 | `product_conditions` | Welche Produkte zu welcher Kategorie passen: PK (`product_id`, `condition_id`) |
-| `saved_plans` | Gespeicherte Pläne der Kunden: `plan_id`, `user_id`, `condition_id`, `animal`, `pet_name` (freiwillig), `created_at`. Nur die Auswahl wird gespeichert, der Inhalt kommt immer aktuell aus `plan_steps`. |
+| `combination_notes` | Hinweis, wenn zwei Krankheiten zusammen gewählt werden: PK (`condition_a`, `condition_b`, kleinere ID zuerst), `note` |
+| `saved_plans` | Gespeicherte Pläne der Kunden: `plan_id`, `user_id`, `animal`, `pet_name` (freiwillig), `created_at`. Nur die Auswahl wird gespeichert, der Inhalt kommt immer aktuell aus `plan_steps`. |
+| `saved_plan_conditions` | Krankheiten eines gespeicherten Plans: PK (`plan_id`, `condition_id`) |
 
 Kardinalitäten:
 - `users` → `login_log`: **1 : N**
@@ -313,7 +328,9 @@ Kardinalitäten:
 - `orders` ↔ `products`: **N : M**, aufgelöst über `order_items`
 - `conditions` → `plan_steps`: **1 : N**
 - `conditions` ↔ `products`: **N : M**, aufgelöst über `product_conditions`
-- `users` → `saved_plans`: **1 : N**, `conditions` → `saved_plans`: **1 : N**
+- `conditions` ↔ `conditions`: **N : M**, Hinweise zu Kombinationen über `combination_notes`
+- `users` → `saved_plans`: **1 : N**
+- `saved_plans` ↔ `conditions`: **N : M**, aufgelöst über `saved_plan_conditions` (ein Tier kann mehrere Krankheiten haben)
 
 ### Löschregeln
 
@@ -333,7 +350,9 @@ gelöscht, und auch die Website löscht weder Benutzer noch Produkte.
 | `order_items.order_id` | `CASCADE` | Bestellung gelöscht → ihre Positionen werden mitgelöscht |
 | `plan_steps.condition_id` | `CASCADE` | Kategorie gelöscht → ihre Plan-Schritte werden mitgelöscht |
 | `product_conditions.product_id`, `product_conditions.condition_id` | `CASCADE` | Produkt oder Kategorie gelöscht → nur die Zuordnung verschwindet |
-| `saved_plans.user_id`, `saved_plans.condition_id` | `CASCADE` | User oder Kategorie gelöscht → seine gespeicherten Pläne werden mitgelöscht |
+| `saved_plans.user_id` | `CASCADE` | User gelöscht → seine gespeicherten Pläne werden mitgelöscht |
+| `saved_plan_conditions.plan_id`, `saved_plan_conditions.condition_id` | `CASCADE` | Plan gelöscht → seine Krankheiten-Zuordnung wird mitgelöscht; Kategorie gelöscht → sie verschwindet aus den Plänen |
+| `combination_notes.condition_a`, `combination_notes.condition_b` | `CASCADE` | Kategorie gelöscht → ihre Hinweise zu Kombinationen werden mitgelöscht |
 | `orders.user_id` | `SET NULL` | User gelöscht → seine Bestellungen **bleiben**, nur `user_id` wird leer (Aufbewahrungspflicht für Geschäftsunterlagen) |
 | `order_items.product_id` | `RESTRICT` | Ein Produkt, das schon bestellt wurde, **kann nicht gelöscht werden**. Die Datenbank lehnt das Löschen mit einer Fehlermeldung ab. |
 
@@ -356,9 +375,9 @@ sich später der Produktpreis, bleibt die alte Bestellung korrekt.
 
 | Datei | Wofür | Behalten? |
 |---|---|---|
-| `database/schema.sql` | Datenbank **komplett neu** aufsetzen (anderer PC, Lehrperson, alles zurücksetzen). Enthält alle 12 Tabellen, die Produkte und die Ernährungspläne. **Löscht vorhandene Daten.** | **Ja, unbedingt.** Ohne sie lässt sich die Datenbank nicht neu aufbauen. |
+| `database/schema.sql` | Datenbank **komplett neu** aufsetzen (anderer PC, Lehrperson, alles zurücksetzen). Enthält alle 14 Tabellen, die Produkte und die Ernährungspläne. **Löscht vorhandene Daten.** | **Ja, unbedingt.** Ohne sie lässt sich die Datenbank nicht neu aufbauen. |
 | `database/update_orders.sql` | Eine **bestehende** Datenbank um `orders`, `order_items` und `newsletter` ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
-| `database/update_ernaehrungsplan.sql` | Eine **bestehende** Datenbank um `conditions`, `plan_steps`, `product_conditions`, `saved_plans` und die Diät-Produkte 9 bis 22 ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
+| `database/update_ernaehrungsplan.sql` | Eine **bestehende** Datenbank um `conditions`, `plan_steps`, `product_conditions`, `combination_notes`, `saved_plans`, `saved_plan_conditions` und die Diät-Produkte 9 bis 22 ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
 
 Frühere Versionen der Dateien speichert Git, auf GitHub unter *History*.
 
@@ -402,8 +421,11 @@ Schritt schief, wird nichts gespeichert.
 
 **Ernährungsplan:** Der Bereich steht direkt unter dem Hero-Bereich (Knopf
 "Ernährungsplan erstellen" und Menüpunkt "Ernährungsplan"). Der Kunde wählt in
-drei Schritten per Kachel das Tier und die Krankheit/Kategorie, optional den
-Namen des Tiers. `diet_plan.php` liefert Ziel,
+drei Schritten per Kachel das Tier und eine oder mehrere Krankheiten,
+optional den Namen des Tiers. Bei mehreren Krankheiten zeigt der Plan zuerst
+einen Hinweis, dass sich die Pläne widersprechen können, und die passenden
+Einträge aus `combination_notes` (z. B. Niere + Diabetes). Danach folgt pro
+Krankheit ein eigener Abschnitt mit Ziel, Plan und passenden Produkten. `diet_plan.php` liefert Ziel,
 die Plan-Schritte für dieses Tier und die IDs der passenden Produkte.
 `script.js` zeigt den Plan und die Produktkarten (mit Warenkorb-Knopf) an.
 "Drucken" druckt nur den Plan. Mit "Plan speichern" legen eingeloggte Kunden
@@ -491,7 +513,8 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 9. Eingeloggt bestellen, danach "Bestellungen" im Header öffnen: Die Bestellung erscheint.
 10. In phpMyAdmin prüfen: `orders`, `order_items` und (mit Häkchen) `newsletter` sind gefüllt.
 11. Ernährungsplan: Katze + Übergewicht → Plan mit "Katzen niemals hungern lassen" und dem Produkt "Leicht & Fit" (Katze). Hund + Diabetes → Futter-Zeile nur für Hunde. Ein Produkt aus dem Plan in den Warenkorb legen.
-12. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
+12. Katze + Chronische Nierenerkrankung + Diabetes wählen → Hinweis "Mehrere Krankheiten" mit Text zu Niere + Diabetes, zwei Abschnitte mit je eigenen Produkten.
+13. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
 
 ## Entscheidungen im Projektverlauf
 
@@ -510,6 +533,7 @@ aufgebaut ist:
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
+| Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
 | Bestehende Produkte im Plan | Nur dort zugeordnet, wo sie passen (Senior-Futter bei Gelenkproblemen), für alle Kategorien zusätzlich neue Diät-Produkte | «Getreidefrei» ist z. B. nicht automatisch für Allergiker geeignet |
 | Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
 

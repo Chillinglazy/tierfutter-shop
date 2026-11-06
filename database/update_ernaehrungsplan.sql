@@ -1,6 +1,8 @@
 -- Tierfutter-Shop – Update: Ernährungsplan
--- Für eine bestehende Datenbank: legt die Tabellen für den Ernährungsplan und
--- die gespeicherten Pläne der Kunden an und ergänzt die Diät-Produkte (IDs 9 bis 22).
+-- Für eine bestehende Datenbank: legt die Tabellen für den Ernährungsplan, die
+-- Hinweise zu Kombinationen und die gespeicherten Pläne der Kunden (auch mit
+-- mehreren Krankheiten) an und ergänzt die Diät-Produkte (IDs 9 bis 22).
+-- Ältere Versionen dieses Updates werden automatisch nachgerüstet.
 -- Benutzer, Warenkörbe, Bestellungen und bisherige Produkte bleiben erhalten.
 -- Import in phpMyAdmin: Haus-Symbol → Importieren → update_ernaehrungsplan.sql auswählen → Importieren.
 -- Zweimal importieren schadet nicht (vorhandene Zeilen werden übersprungen).
@@ -50,25 +52,63 @@ CREATE TABLE IF NOT EXISTS product_conditions (
     REFERENCES conditions (condition_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
--- GESPEICHERTE PLÄNE: users 1 : N saved_plans, conditions 1 : N saved_plans
+-- KOMBINATIONEN: Hinweise, wenn zwei Krankheiten zusammen gewählt werden
+-- (conditions N : M conditions). condition_a ist immer die kleinere ID.
+CREATE TABLE IF NOT EXISTS combination_notes (
+  condition_a INT UNSIGNED NOT NULL,
+  condition_b INT UNSIGNED NOT NULL,
+  note        VARCHAR(500) NOT NULL,
+  PRIMARY KEY (condition_a, condition_b),
+  KEY idx_combination_notes_b (condition_b),
+  CONSTRAINT chk_combination_notes_order CHECK (condition_a < condition_b),
+  CONSTRAINT fk_combination_notes_a FOREIGN KEY (condition_a)
+    REFERENCES conditions (condition_id) ON DELETE CASCADE,
+  CONSTRAINT fk_combination_notes_b FOREIGN KEY (condition_b)
+    REFERENCES conditions (condition_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+-- GESPEICHERTE PLÄNE: users 1 : N saved_plans
 -- Eingeloggte Kunden speichern ihre erstellten Pläne ("Meine Pläne").
 -- Der Inhalt kommt immer aktuell aus plan_steps, gespeichert wird nur die Auswahl.
 CREATE TABLE IF NOT EXISTS saved_plans (
-  plan_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id      INT UNSIGNED NOT NULL,
-  condition_id INT UNSIGNED NOT NULL,
-  animal       VARCHAR(30)  NOT NULL,
-  pet_name     VARCHAR(40)  NULL,
-  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  plan_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  animal     VARCHAR(30)  NOT NULL,
+  pet_name   VARCHAR(40)  NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (plan_id),
   KEY idx_saved_plans_user (user_id),
-  KEY idx_saved_plans_condition (condition_id),
   CONSTRAINT chk_saved_plans_animal CHECK (animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_saved_plans_user FOREIGN KEY (user_id)
-    REFERENCES users (user_id) ON DELETE CASCADE,
-  CONSTRAINT fk_saved_plans_condition FOREIGN KEY (condition_id)
+    REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+-- KRANKHEITEN EINES GESPEICHERTEN PLANS: saved_plans N : M conditions
+-- Ein Tier kann mehrere Krankheiten haben.
+CREATE TABLE IF NOT EXISTS saved_plan_conditions (
+  plan_id      INT UNSIGNED NOT NULL,
+  condition_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (plan_id, condition_id),
+  KEY idx_saved_plan_conditions_condition (condition_id),
+  CONSTRAINT fk_saved_plan_conditions_plan FOREIGN KEY (plan_id)
+    REFERENCES saved_plans (plan_id) ON DELETE CASCADE,
+  CONSTRAINT fk_saved_plan_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
+
+-- Ältere Version: saved_plans hatte eine Spalte condition_id (nur 1 Krankheit).
+-- Vorhandene Pläne nach saved_plan_conditions kopieren, dann die Spalte entfernen.
+SET @old_column = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saved_plans' AND COLUMN_NAME = 'condition_id');
+SET @copy_sql = IF(@old_column > 0,
+  'INSERT IGNORE INTO saved_plan_conditions (plan_id, condition_id) SELECT plan_id, condition_id FROM saved_plans',
+  'DO 0');
+PREPARE copy_stmt FROM @copy_sql;
+EXECUTE copy_stmt;
+DEALLOCATE PREPARE copy_stmt;
+ALTER TABLE saved_plans DROP FOREIGN KEY IF EXISTS fk_saved_plans_condition;
+ALTER TABLE saved_plans DROP INDEX IF EXISTS idx_saved_plans_condition;
+ALTER TABLE saved_plans DROP COLUMN IF EXISTS condition_id;
 
 -- DIÄT-PRODUKTE: gleiches Format wie die übrigen Produkte, special = 'Diät'.
 INSERT IGNORE INTO products
@@ -107,6 +147,20 @@ UPDATE conditions SET icon = '🫘' WHERE condition_id = 4 AND icon = '';
 UPDATE conditions SET icon = '💧' WHERE condition_id = 5 AND icon = '';
 UPDATE conditions SET icon = '🩸' WHERE condition_id = 6 AND icon = '';
 UPDATE conditions SET icon = '🦴' WHERE condition_id = 7 AND icon = '';
+
+-- HINWEISE ZU KOMBINATIONEN (kleinere ID zuerst)
+INSERT IGNORE INTO combination_notes (condition_a, condition_b, note) VALUES
+  (1, 2, 'Während einer Ausschlussdiät nur die vereinbarte Diät füttern. Ob und wie das Tier dabei abnehmen soll, mit der Tierarztpraxis besprechen.'),
+  (1, 4, 'Abnehmen darf bei einer Nierenerkrankung nicht zu Futterverweigerung oder Muskelabbau führen. Gewicht nur unter tierärztlicher Kontrolle reduzieren.'),
+  (1, 6, 'Abnehmen kann den Insulinbedarf verändern. Futtermenge und Insulin nur zusammen mit der Tierarztpraxis anpassen.'),
+  (2, 3, 'Ausschlussdiät und Magen-Darm-Diät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 4, 'Ausschlussdiät und Nierendiät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 5, 'Ausschlussdiät und Harnwegsdiät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 6, 'Ausschlussdiät und Diabetes-Fütterung nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 7, 'Auch Gelenk-Ergänzungsmittel können Auslöser enthalten. Während der Ausschlussdiät nur nach Rücksprache geben.'),
+  (4, 5, 'Nieren- und Harnwegsdiäten unterscheiden sich zum Beispiel bei Phosphor, Eiweiss und Mineralstoffen. Welche Diät passt, entscheidet die Tierarztpraxis.'),
+  (4, 6, 'Bei Diabetes wird oft eiweissreich gefüttert, bei einer Nierenerkrankung eher eiweiss- und phosphorreduziert. Die Tierarztpraxis legt fest, was Vorrang hat.'),
+  (4, 7, 'Omega-3-Fettsäuren und Gelenk-Ergänzungsmittel bei einer Nierenerkrankung nur nach Rücksprache geben.');
 
 -- PLAN-SCHRITTE (animal NULL = Hund und Katze)
 INSERT IGNORE INTO plan_steps (step_id, condition_id, animal, label, text, sort_order) VALUES

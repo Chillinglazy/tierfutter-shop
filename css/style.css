@@ -889,6 +889,79 @@ label.choice {
   margin: 22px 0 0
 }
 
+.legend-hint {
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--muted)
+}
+
+.choice-check {
+  display: none;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: bold;
+  color: var(--green)
+}
+
+.choice input:checked + span .choice-check {
+  display: block
+}
+
+.plan-combined {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: #fff7e8;
+  border: 1px solid #ecd9b0;
+  border-radius: 12px;
+  color: #6b5320;
+  font-size: 14px;
+  line-height: 1.5
+}
+
+.plan-combined p {
+  margin: 8px 0 0
+}
+
+.plan-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0
+}
+
+.plan-jump a {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  font-size: 13px;
+  background: #f6f9f4
+}
+
+.plan-part {
+  scroll-margin-top: 16px
+}
+
+.plan-part + .plan-part {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 2px dashed var(--line)
+}
+
+.plan-part-title {
+  font: 24px Georgia, serif;
+  margin: 24px 0 6px
+}
+
+.plan-goal {
+  margin: 0;
+  font-size: 14px
+}
+
+h4.plan-products-title {
+  font-size: 16px
+}
+
 .saved-plan {
   display: flex;
   align-items: center;
@@ -1103,7 +1176,8 @@ label.choice {
   }
 
   #planResult .btn,
-  #planResult .add {
+  #planResult .add,
+  .plan-jump {
     display: none
   }
 }
