@@ -55,6 +55,9 @@
    <a href="#finder">
     Futter finden
    </a>
+   <a href="#ernaehrungsplan">
+    Ernährungsplan
+   </a>
    <a href="#kontakt">
     Kontakt
    </a>
@@ -157,6 +160,9 @@
        <option>
         Senior
        </option>
+       <option>
+        Diät
+       </option>
       </select>
      </label>
      <label>
@@ -206,6 +212,57 @@
      </span>
     </div>
     <div class="grid" id="products">
+    </div>
+   </section>
+   <section class="finder plan" id="ernaehrungsplan">
+    <div class="finder-top">
+     <strong>
+      Ernährungsplan erstellen
+     </strong>
+     <span>
+      Wähle Tier und Kategorie – wir zeigen dir einen Plan und passende Produkte.
+     </span>
+    </div>
+    <p class="plan-warning" role="note">
+     <strong>
+      Wichtig:
+     </strong>
+     Der Plan ist eine allgemeine Orientierung, keine Diagnose und ersetzt keine tierärztliche Beratung. Diätfutter nur nach Diagnose und Rücksprache füttern. Bei Fragen, Futterverweigerung oder Veränderungen die Tierarztpraxis kontaktieren.
+    </p>
+    <form class="fields plan-fields" id="planForm">
+     <label>
+      Tier
+      <select id="planAnimal" required="">
+       <option value="">
+        Bitte wählen
+       </option>
+       <option>
+        Hund
+       </option>
+       <option>
+        Katze
+       </option>
+      </select>
+     </label>
+     <label>
+      Krankheit / Kategorie
+      <select id="planCondition" required="">
+       <option value="">
+        Bitte wählen
+       </option>
+      </select>
+     </label>
+     <label>
+      Name des Tiers (freiwillig)
+      <input id="planPet" maxlength="40" placeholder="z. B. Bello"/>
+     </label>
+     <button class="btn solid" id="planSubmit" type="submit">
+      Plan erstellen ↗
+     </button>
+    </form>
+    <p id="planMessage" role="status">
+    </p>
+    <div hidden="" id="planResult">
     </div>
    </section>
    <section class="bottom-banner">

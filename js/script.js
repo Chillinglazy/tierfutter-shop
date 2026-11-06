@@ -31,6 +31,31 @@ async function api(file, data) {
   return json
 }
 
+// PRODUKTKARTE: gleiche Darstellung im Sortiment und im Ernährungsplan.
+function productCard(p) {
+  return `<article class="card" data-product-id="${p.product_id}">
+  <div class="product-art" style="--tint:${esc(p.tint)};--bag:${esc(p.color)}">
+  <span class="tag">${esc(p.tag)}</span><div class="bag">
+  <small>TIERFUTTER-SHOP
+  </small>
+  <div class="animal">${p.animal==='Hund'?'🐕':p.animal==='Katze'?'🐈':'🐇'}</div>
+  <b>${esc(p.taste)}</b>
+  <div class="flavour">NATUR IM NAPF</div>
+  <small>${esc(p.size)}</small>
+  </div>
+  </div>
+  <div class="card-body">
+  <div class="meta">${esc(p.animal)} · ${esc(p.food_type)}</div>
+  <h3>${esc(p.name)}</h3>
+  <p class="desc">${esc(p.description)}</p>
+  <div class="price-line">
+  <strong>${money(p.price)}</strong>
+  <button class="add" onclick="add(${p.product_id})" aria-label="${esc(p.name)} zum Warenkorb hinzufügen">+</button>
+  </div>
+  </div>
+  </article>`
+}
+
 // PRODUKTLISTE: Auswahl anhand der Filter anzeigen.
 function render() {
   const vals = Object.fromEntries(ids.map(id => [id, document.getElementById(id).value]));
@@ -39,27 +64,7 @@ function render() {
 
   document.getElementById('resultCount').textContent = list.length + ' Produkte entdecken';
 
-  document.getElementById('products').innerHTML = list.map(p => `<article class="card" data-product-id="${p.product_id}">
-    <div class="product-art" style="--tint:${esc(p.tint)};--bag:${esc(p.color)}">
-    <span class="tag">${esc(p.tag)}</span><div class="bag">
-    <small>TIERFUTTER-SHOP
-    </small>
-    <div class="animal">${p.animal==='Hund'?'🐕':p.animal==='Katze'?'🐈':'🐇'}</div>
-    <b>${esc(p.taste)}</b>
-    <div class="flavour">NATUR IM NAPF</div>
-    <small>${esc(p.size)}</small>
-    </div>
-    </div>
-    <div class="card-body">
-    <div class="meta">${esc(p.animal)} · ${esc(p.food_type)}</div>
-    <h3>${esc(p.name)}</h3>
-    <p class="desc">${esc(p.description)}</p>
-    <div class="price-line">
-    <strong>${money(p.price)}</strong>
-    <button class="add" onclick="add(${p.product_id})" aria-label="${esc(p.name)} zum Warenkorb hinzufügen">+</button>
-    </div>
-    </div>
-    </article>`).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein Beispielprodukt.<br>Probiere andere Filter oder setze die Auswahl zurück.</div>';
+  document.getElementById('products').innerHTML = list.map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein Beispielprodukt.<br>Probiere andere Filter oder setze die Auswahl zurück.</div>';
 
   document.getElementById('filterInfo').textContent = vals.age || vals.weight ? 'Beispielauswahl nach Alter und Gewicht – keine Fütterungsempfehlung.' : 'Dein nächstes Lieblingsfutter wartet schon.'
 }
@@ -290,6 +295,50 @@ async function openOrders() {
     list.textContent = err.message
   }
 }
+// ERNÄHRUNGSPLAN: Kategorien laden, Plan von diet_plan.php holen und anzeigen.
+async function loadConditions() {
+  const select = document.getElementById('planCondition');
+  try {
+    const { conditions } = await api('diet_plan.php');
+    select.insertAdjacentHTML('beforeend', conditions.map(c => `<option value="${c.condition_id}">${esc(c.name)}</option>`).join(''))
+  } catch (err) {
+    document.getElementById('planMessage').textContent = err.message
+  }
+}
+
+document.getElementById('planForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const animal = document.getElementById('planAnimal').value;
+  const conditionId = document.getElementById('planCondition').value;
+  const pet = document.getElementById('planPet').value.trim();
+  const result = document.getElementById('planResult');
+  const message = document.getElementById('planMessage');
+  const button = document.getElementById('planSubmit');
+  message.textContent = '';
+  button.disabled = true;
+  try {
+    const { plan } = await api('diet_plan.php?condition_id=' + encodeURIComponent(conditionId) + '&animal=' + encodeURIComponent(animal));
+    const list = plan.product_ids.map(id => products.find(p => p.product_id === id)).filter(Boolean);
+    result.innerHTML = `<div class="plan-head">
+      <div>
+      <div class="eyebrow">Ernährungsplan · ${esc(plan.animal)}</div>
+      <h3>${pet ? 'Für ' + esc(pet) + ': ' : ''}${esc(plan.name)}</h3>
+      <p><strong>Ziel:</strong> ${esc(plan.goal)}</p>
+      </div>
+      <button class="btn" type="button" onclick="window.print()">Plan drucken</button>
+      </div>
+      <dl class="plan-steps">${plan.steps.map(s => `<div class="plan-step${s.label === 'Wichtig' ? ' important' : ''}"><dt>${esc(s.label)}</dt><dd>${esc(s.text)}</dd></div>`).join('')}</dl>
+      <h3 class="plan-products-title">Passende Produkte</h3>
+      <div class="grid">${list.map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
+      <p class="plan-warning"><strong>Tierarztpraxis kontaktieren:</strong> Die Produkte sind Beispiele aus unserem Sortiment. Welche Diät, welche Menge und wie lange, legst du gemeinsam mit deiner Tierarztpraxis fest.</p>`;
+    result.hidden = false;
+    result.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  } catch (err) {
+    message.textContent = err.message
+  } finally {
+    button.disabled = false
+  }
+});
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.target === d) {
     const r = d.getBoundingClientRect();
@@ -310,6 +359,7 @@ async function loadProducts() {
   save()
 }
 save();
+loadConditions();
 loadProducts().then(() => api('session.php')).then(res => res.user && loggedIn(res.user, false)).catch(() => {
   // z. B. User in der Datenbank gelöscht: wieder als Gast anzeigen.
   currentUser = null;
