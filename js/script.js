@@ -297,17 +297,17 @@ async function openOrders() {
     list.textContent = err.message
   }
 }
-// ERNÄHRUNGSPLAN: Kategorien als Kacheln laden, Plan von diet_plan.php holen und anzeigen.
+// ERNÄHRUNGSPLAN: Krankheiten als Kacheln (Mehrfachauswahl), Plan von diet_plan.php holen und anzeigen.
 const stepIcons = { Futter: '🥣', Tagesablauf: '🕒', Leckerlis: '🍪', Vermeiden: '🚫', Kontrolle: '📋', Wichtig: '⚠️' };
-let shownPlan = null; // {condition_id, animal, pet_name} des angezeigten Plans
+let shownPlan = null; // {condition_ids, animal, pet_name} des angezeigten Plans
 
 async function loadConditions() {
   const box = document.getElementById('planConditions');
   try {
     const { conditions } = await api('diet_plan.php');
-    box.innerHTML = conditions.map((c, i) => `<label class="choice">
-      <input name="planCondition" type="radio" value="${c.condition_id}"${i ? '' : ' required'}>
-      <span><b class="choice-icon">${esc(c.icon)}</b><strong>${esc(c.name)}</strong><small>${esc(c.goal)}</small></span>
+    box.innerHTML = conditions.map(c => `<label class="choice">
+      <input name="planCondition" type="checkbox" value="${c.condition_id}">
+      <span><b class="choice-icon">${esc(c.icon)}</b><strong>${esc(c.name)}</strong><small>${esc(c.goal)}</small><em class="choice-check">✓ gewählt</em></span>
       </label>`).join('')
   } catch (err) {
     box.innerHTML = '<p class="demo">' + esc(err.message) + '</p>'
@@ -316,45 +316,66 @@ async function loadConditions() {
 
 document.getElementById('planForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const checked = name => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+  const animal = document.querySelector('input[name="planAnimal"]:checked')?.value || '';
+  const ids = [...document.querySelectorAll('input[name="planCondition"]:checked')].map(c => +c.value);
+  const message = document.getElementById('planMessage');
+  if (!ids.length) {
+    message.textContent = 'Bitte mindestens eine Krankheit auswählen.';
+    return document.getElementById('planConditions').scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
   const button = document.getElementById('planSubmit');
   button.disabled = true;
-  await showPlan(checked('planCondition'), checked('planAnimal'), document.getElementById('planPet').value.trim());
+  await showPlan(ids, animal, document.getElementById('planPet').value.trim());
   button.disabled = false
 });
 
-async function showPlan(conditionId, animal, pet) {
+// Zeilen mit gleicher Überschrift (z. B. zweimal "Wichtig") in einer Karte zeigen
+function stepCards(steps) {
+  const groups = [];
+  steps.forEach(s => {
+    const g = groups.find(g => g.label === s.label);
+    g ? g.texts.push(s.text) : groups.push({ label: s.label, texts: [s.text] })
+  });
+  return groups.map(g => `<div class="plan-step${g.label === 'Wichtig' ? ' important' : ''}">
+    <span class="step-icon">${stepIcons[g.label] || '•'}</span>
+    <div><strong>${esc(g.label)}</strong>${g.texts.map(t => `<p>${esc(t)}</p>`).join('')}</div>
+    </div>`).join('')
+}
+
+async function showPlan(ids, animal, pet) {
   const result = document.getElementById('planResult');
   const message = document.getElementById('planMessage');
   message.textContent = '';
   try {
-    const { plan } = await api('diet_plan.php?condition_id=' + encodeURIComponent(conditionId) + '&animal=' + encodeURIComponent(animal));
-    shownPlan = { condition_id: plan.condition_id, animal: plan.animal, pet_name: pet };
-    const list = plan.product_ids.map(id => products.find(p => p.product_id === id)).filter(Boolean);
-    // Zeilen mit gleicher Überschrift (z. B. zweimal "Wichtig") in einer Karte zeigen
-    const groups = [];
-    plan.steps.forEach(s => {
-      const g = groups.find(g => g.label === s.label);
-      g ? g.texts.push(s.text) : groups.push({ label: s.label, texts: [s.text] })
-    });
+    const { plan } = await api('diet_plan.php?condition_ids=' + encodeURIComponent(ids.join(',')) + '&animal=' + encodeURIComponent(animal));
+    shownPlan = { condition_ids: plan.conditions.map(c => c.condition_id), animal: plan.animal, pet_name: pet };
+    const several = plan.conditions.length > 1;
+    const title = plan.conditions.map(c => esc(c.name)).join(' + ');
+    const productList = c => c.product_ids.map(id => products.find(p => p.product_id === id)).filter(Boolean);
     result.innerHTML = `<div class="plan-head">
-      <span class="plan-icon">${esc(plan.icon)}</span>
+      <span class="plan-icon">${several ? '🩺' : esc(plan.conditions[0].icon)}</span>
       <div class="plan-head-text">
-      <div class="eyebrow">Ernährungsplan · ${esc(plan.animal)}</div>
-      <h3>${pet ? 'Für ' + esc(pet) + ': ' : ''}${esc(plan.name)}</h3>
-      <p><strong>Ziel:</strong> ${esc(plan.goal)}</p>
+      <div class="eyebrow">Ernährungsplan · ${esc(plan.animal)}${several ? ' · ' + plan.conditions.length + ' Krankheiten' : ''}</div>
+      <h3>${pet ? 'Für ' + esc(pet) + ': ' : ''}${title}</h3>
+      ${several ? '' : `<p><strong>Ziel:</strong> ${esc(plan.conditions[0].goal)}</p>`}
       </div>
       <div class="plan-actions">
       <button class="btn solid" type="button" id="planSave" onclick="savePlan()"></button>
       <button class="btn" type="button" onclick="window.print()">Drucken</button>
       </div>
       </div>
-      <div class="plan-steps">${groups.map(g => `<div class="plan-step${g.label === 'Wichtig' ? ' important' : ''}">
-        <span class="step-icon">${stepIcons[g.label] || '•'}</span>
-        <div><strong>${esc(g.label)}</strong>${g.texts.map(t => `<p>${esc(t)}</p>`).join('')}</div>
-        </div>`).join('')}</div>
-      <h3 class="plan-products-title">Passende Produkte für ${esc(plan.animal === 'Hund' ? 'deinen Hund' : 'deine Katze')}</h3>
-      <div class="grid">${list.map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
+      ${several ? `<div class="plan-combined">
+        <strong>⚠️ Mehrere Krankheiten gleichzeitig</strong>
+        <p>Die einzelnen Pläne können sich widersprechen. Futter nicht selbst kombinieren und nicht mehrere Diätfutter mischen. Welche Diät Vorrang hat, legt die Tierarztpraxis fest.</p>
+        ${plan.notes.map(n => `<p><b>${n.names.map(esc).join(' + ')}:</b> ${esc(n.note)}</p>`).join('')}
+        </div>
+        <nav class="plan-jump">${plan.conditions.map(c => `<a href="#plan-c${c.condition_id}">${esc(c.icon)} ${esc(c.name)}</a>`).join('')}</nav>` : ''}
+      ${plan.conditions.map(c => `<section class="plan-part" id="plan-c${c.condition_id}">
+        ${several ? `<h3 class="plan-part-title"><span>${esc(c.icon)}</span> ${esc(c.name)}</h3><p class="plan-goal"><strong>Ziel:</strong> ${esc(c.goal)}</p>` : ''}
+        <div class="plan-steps">${stepCards(c.steps)}</div>
+        <h4 class="plan-products-title">Passende Produkte${several ? ' bei ' + esc(c.name) : ''} für ${plan.animal === 'Hund' ? 'deinen Hund' : 'deine Katze'}</h4>
+        <div class="grid">${productList(c).map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
+        </section>`).join('')}
       <p class="plan-warning"><strong>Tierarztpraxis kontaktieren:</strong> Die Produkte sind Beispiele aus unserem Sortiment. Welche Diät, welche Menge und wie lange, legst du gemeinsam mit deiner Tierarztpraxis fest.</p>`;
     result.hidden = false;
     updatePlanSave();
@@ -390,11 +411,11 @@ async function openPlans(data) {
   try {
     const { plans } = await api('saved_plans.php', data);
     list.innerHTML = plans.length ? plans.map(p => `<div class="order saved-plan">
-      <span class="plan-icon small">${esc(p.icon)}</span>
-      <div><strong>${p.pet_name ? esc(p.pet_name) + ' · ' : ''}${esc(p.name)}</strong><br>
+      <span class="plan-icon small">${p.conditions.length > 1 ? '🩺' : esc(p.conditions[0].icon)}</span>
+      <div><strong>${p.pet_name ? esc(p.pet_name) + ' · ' : ''}${p.conditions.map(c => esc(c.name)).join(' + ')}</strong><br>
       <small>${esc(p.animal)} · gespeichert am ${new Date(p.created_at.replace(' ', 'T')).toLocaleDateString('de-CH')}</small></div>
       <div class="dialog-buttons">
-      <button class="btn solid" onclick="openSavedPlan(${p.condition_id}, '${esc(p.animal)}', this.dataset.pet)" data-pet="${esc(p.pet_name)}">Anzeigen</button>
+      <button class="btn solid" onclick="openSavedPlan('${p.conditions.map(c => c.condition_id).join(',')}', '${esc(p.animal)}', this.dataset.pet)" data-pet="${esc(p.pet_name)}">Anzeigen</button>
       <button class="btn" onclick="openPlans({ action: 'delete', plan_id: ${p.plan_id} })">Löschen</button>
       </div>
       </div>`).join('') : 'Du hast noch keine Pläne gespeichert. Erstelle einen Plan und klicke auf "Plan speichern".'
@@ -403,13 +424,15 @@ async function openPlans(data) {
   }
 }
 
-function openSavedPlan(conditionId, animal, pet) {
+function openSavedPlan(idList, animal, pet) {
+  const ids = idList.split(',').map(Number);
   document.getElementById('plans').close();
   document.querySelectorAll('input[name="planAnimal"]').forEach(r => r.checked = r.value === animal);
-  document.querySelectorAll('input[name="planCondition"]').forEach(r => r.checked = +r.value === conditionId);
+  document.querySelectorAll('input[name="planCondition"]').forEach(c => c.checked = ids.includes(+c.value));
   document.getElementById('planPet').value = pet || '';
-  showPlan(conditionId, animal, pet || '')
+  showPlan(ids, animal, pet || '')
 }
+
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.target === d) {
     const r = d.getBoundingClientRect();

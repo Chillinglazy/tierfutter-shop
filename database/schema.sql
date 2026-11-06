@@ -10,7 +10,9 @@ USE tierfutter_shop;
 
 -- Reihenfolge egal, weil die Fremdschlüssel-Prüfung kurz ausgeschaltet ist.
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS saved_plan_conditions;
 DROP TABLE IF EXISTS saved_plans;
+DROP TABLE IF EXISTS combination_notes;
 DROP TABLE IF EXISTS product_conditions;
 DROP TABLE IF EXISTS plan_steps;
 DROP TABLE IF EXISTS conditions;
@@ -173,7 +175,8 @@ VALUES
   (7, 'Lachs & Balance',    'Getreidefrei · 6 × 400 g', 29.90, NULL, 'Hund',  'Nassfutter',    'Getreidefrei', 'Lachs', '6 × 400 g', 'Abwechslung im Napf',    '#658377', '#eaf2ee', 1, 15, 1, 90),
   (8, 'Huhn & Geborgen',    'Senior · 6 × 200 g',       19.90, NULL, 'Katze', 'Nassfutter',    'Senior',       'Huhn',  '6 × 200 g', 'Sanft geniessen',        '#a2a581', '#f2f3e9', 7, 25, 1, 15);
 
--- ERNÄHRUNGSPLAN: Krankheiten/Kategorien, Plan-Schritte, passende Produkte, gespeicherte Pläne
+-- ERNÄHRUNGSPLAN: Krankheiten/Kategorien, Plan-Schritte, passende Produkte,
+-- Hinweise zu Kombinationen, gespeicherte Pläne (auch mit mehreren Krankheiten)
 -- (gleich wie update_ernaehrungsplan.sql, dort für eine bestehende Datenbank)
 
 -- KRANKHEITEN / KATEGORIEN für den Ernährungsplan
@@ -215,23 +218,47 @@ CREATE TABLE product_conditions (
     REFERENCES conditions (condition_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
--- GESPEICHERTE PLÄNE: users 1 : N saved_plans, conditions 1 : N saved_plans
+-- KOMBINATIONEN: Hinweise, wenn zwei Krankheiten zusammen gewählt werden
+-- (conditions N : M conditions). condition_a ist immer die kleinere ID.
+CREATE TABLE combination_notes (
+  condition_a INT UNSIGNED NOT NULL,
+  condition_b INT UNSIGNED NOT NULL,
+  note        VARCHAR(500) NOT NULL,
+  PRIMARY KEY (condition_a, condition_b),
+  KEY idx_combination_notes_b (condition_b),
+  CONSTRAINT chk_combination_notes_order CHECK (condition_a < condition_b),
+  CONSTRAINT fk_combination_notes_a FOREIGN KEY (condition_a)
+    REFERENCES conditions (condition_id) ON DELETE CASCADE,
+  CONSTRAINT fk_combination_notes_b FOREIGN KEY (condition_b)
+    REFERENCES conditions (condition_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+-- GESPEICHERTE PLÄNE: users 1 : N saved_plans
 -- Eingeloggte Kunden speichern ihre erstellten Pläne ("Meine Pläne").
 -- Der Inhalt kommt immer aktuell aus plan_steps, gespeichert wird nur die Auswahl.
 CREATE TABLE saved_plans (
-  plan_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id      INT UNSIGNED NOT NULL,
-  condition_id INT UNSIGNED NOT NULL,
-  animal       VARCHAR(30)  NOT NULL,
-  pet_name     VARCHAR(40)  NULL,
-  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  plan_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  animal     VARCHAR(30)  NOT NULL,
+  pet_name   VARCHAR(40)  NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (plan_id),
   KEY idx_saved_plans_user (user_id),
-  KEY idx_saved_plans_condition (condition_id),
   CONSTRAINT chk_saved_plans_animal CHECK (animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_saved_plans_user FOREIGN KEY (user_id)
-    REFERENCES users (user_id) ON DELETE CASCADE,
-  CONSTRAINT fk_saved_plans_condition FOREIGN KEY (condition_id)
+    REFERENCES users (user_id) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+-- KRANKHEITEN EINES GESPEICHERTEN PLANS: saved_plans N : M conditions
+-- Ein Tier kann mehrere Krankheiten haben.
+CREATE TABLE saved_plan_conditions (
+  plan_id      INT UNSIGNED NOT NULL,
+  condition_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (plan_id, condition_id),
+  KEY idx_saved_plan_conditions_condition (condition_id),
+  CONSTRAINT fk_saved_plan_conditions_plan FOREIGN KEY (plan_id)
+    REFERENCES saved_plans (plan_id) ON DELETE CASCADE,
+  CONSTRAINT fk_saved_plan_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
@@ -263,6 +290,20 @@ INSERT INTO conditions (condition_id, name, icon, goal, sort_order) VALUES
   (5, 'Harnsteine oder Harnwegserkrankungen', '💧', 'Die Behandlung unterstützen und das Risiko weiterer Steine reduzieren.', 5),
   (6, 'Diabetes', '🩸', 'Möglichst gleichmässige Blutzuckerwerte unterstützen.', 6),
   (7, 'Gelenkprobleme / Arthrose', '🦴', 'Ein gesundes Körpergewicht halten und die Beweglichkeit unterstützen.', 7);
+
+-- HINWEISE ZU KOMBINATIONEN (kleinere ID zuerst)
+INSERT INTO combination_notes (condition_a, condition_b, note) VALUES
+  (1, 2, 'Während einer Ausschlussdiät nur die vereinbarte Diät füttern. Ob und wie das Tier dabei abnehmen soll, mit der Tierarztpraxis besprechen.'),
+  (1, 4, 'Abnehmen darf bei einer Nierenerkrankung nicht zu Futterverweigerung oder Muskelabbau führen. Gewicht nur unter tierärztlicher Kontrolle reduzieren.'),
+  (1, 6, 'Abnehmen kann den Insulinbedarf verändern. Futtermenge und Insulin nur zusammen mit der Tierarztpraxis anpassen.'),
+  (2, 3, 'Ausschlussdiät und Magen-Darm-Diät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 4, 'Ausschlussdiät und Nierendiät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 5, 'Ausschlussdiät und Harnwegsdiät nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 6, 'Ausschlussdiät und Diabetes-Fütterung nicht selbst kombinieren. Die Tierarztpraxis wählt ein Futter, das zu beidem passt.'),
+  (2, 7, 'Auch Gelenk-Ergänzungsmittel können Auslöser enthalten. Während der Ausschlussdiät nur nach Rücksprache geben.'),
+  (4, 5, 'Nieren- und Harnwegsdiäten unterscheiden sich zum Beispiel bei Phosphor, Eiweiss und Mineralstoffen. Welche Diät passt, entscheidet die Tierarztpraxis.'),
+  (4, 6, 'Bei Diabetes wird oft eiweissreich gefüttert, bei einer Nierenerkrankung eher eiweiss- und phosphorreduziert. Die Tierarztpraxis legt fest, was Vorrang hat.'),
+  (4, 7, 'Omega-3-Fettsäuren und Gelenk-Ergänzungsmittel bei einer Nierenerkrankung nur nach Rücksprache geben.');
 
 -- PLAN-SCHRITTE (animal NULL = Hund und Katze)
 INSERT INTO plan_steps (step_id, condition_id, animal, label, text, sort_order) VALUES
