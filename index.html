@@ -7,8 +7,8 @@
    Tierfutter-Shop · Bargen
   </title>
   <meta content="Tierfutter passend zu deinem Liebling. Entdecke den Tierfutter-Shop aus Bargen, Schaffhausen." name="description"/>
-  <link href="css/style.css" rel="stylesheet"/>
-  <script defer="" src="js/script.js">
+  <link href="css/style.css?v=3" rel="stylesheet"/>
+  <script defer="" src="js/script.js?v=3">
   </script>
  </head>
  <body>
@@ -43,20 +43,23 @@
     <button class="btn" hidden="" id="ordersBtn" onclick="openOrders()">
      Bestellungen
     </button>
+    <button class="btn" hidden="" id="plansBtn" onclick="openPlans()">
+     Meine Pläne
+    </button>
     <button class="btn" hidden="" id="logoutBtn" onclick="logout()">
      Logout
     </button>
    </div>
   </header>
   <nav>
-   <a href="#sortiment">
-    Unser Sortiment
+   <a href="#ernaehrungsplan">
+    Ernährungsplan
    </a>
    <a href="#finder">
     Futter finden
    </a>
-   <a href="#ernaehrungsplan">
-    Ernährungsplan
+   <a href="#sortiment">
+    Unser Sortiment
    </a>
    <a href="#kontakt">
     Kontakt
@@ -78,9 +81,14 @@
      <p>
       Jeder Liebling ist einzigartig. Finde das Futter, das zu ihm passt – mit Sorgfalt ausgewählt und ganz viel Liebe.
      </p>
-     <a class="btn solid" href="#finder" style="display:inline-block;margin-top:12px">
-      Lieblingsfutter finden ↗
-     </a>
+     <div class="hero-buttons">
+      <a class="btn solid" href="#finder">
+       Lieblingsfutter finden ↗
+      </a>
+      <a class="btn" href="#ernaehrungsplan">
+       Ernährungsplan erstellen ♡
+      </a>
+     </div>
     </div>
     <div class="hero-art">
      <img alt="Glücklicher Hund und Katze am Futternapf" src="assets/logo.png"/>
@@ -104,6 +112,81 @@
      ⌂ Zuhause in Schaffhausen
     </span>
    </div>
+   <section class="plan" id="ernaehrungsplan">
+    <div class="section-head plan-title">
+     <div>
+      <div class="eyebrow">
+       Neu: Ernährungsplan
+      </div>
+      <h2>
+       Der passende Plan für deinen Liebling.
+      </h2>
+     </div>
+     <span>
+      In 3 Schritten zum Plan
+     </span>
+    </div>
+    <p class="plan-warning" role="note">
+     <strong>
+      Wichtig:
+     </strong>
+     Der Plan ist eine allgemeine Orientierung, keine Diagnose und ersetzt keine tierärztliche Beratung. Diätfutter nur nach Diagnose und Rücksprache füttern. Bei Fragen, Futterverweigerung oder Veränderungen die Tierarztpraxis kontaktieren.
+    </p>
+    <form id="planForm">
+     <fieldset class="plan-box">
+      <legend>
+       <span class="step-no">1</span>
+       Welches Tier hast du?
+      </legend>
+      <div class="choice-grid animals">
+       <label class="choice">
+        <input name="planAnimal" required="" type="radio" value="Hund"/>
+        <span>
+         <b class="choice-icon">🐕</b>
+         <strong>Hund</strong>
+        </span>
+       </label>
+       <label class="choice">
+        <input name="planAnimal" type="radio" value="Katze"/>
+        <span>
+         <b class="choice-icon">🐈</b>
+         <strong>Katze</strong>
+        </span>
+       </label>
+      </div>
+     </fieldset>
+     <fieldset class="plan-box">
+      <legend>
+       <span class="step-no">2</span>
+       Worauf soll der Plan achten?
+      </legend>
+      <div class="choice-grid conditions" id="planConditions">
+       <p class="demo">
+        Kategorien werden geladen …
+       </p>
+      </div>
+     </fieldset>
+     <fieldset class="plan-box">
+      <legend>
+       <span class="step-no">3</span>
+       Plan erstellen
+      </legend>
+      <div class="plan-last">
+       <label>
+        Name des Tiers (freiwillig)
+        <input id="planPet" maxlength="40" placeholder="z. B. Bello"/>
+       </label>
+       <button class="btn solid" id="planSubmit" type="submit">
+        Plan erstellen ↗
+       </button>
+      </div>
+      <p id="planMessage" role="status">
+      </p>
+     </fieldset>
+    </form>
+    <div hidden="" id="planResult">
+    </div>
+   </section>
    <section class="finder" id="finder" style="margin-top:32px">
     <div class="finder-top">
      <strong>
@@ -212,57 +295,6 @@
      </span>
     </div>
     <div class="grid" id="products">
-    </div>
-   </section>
-   <section class="finder plan" id="ernaehrungsplan">
-    <div class="finder-top">
-     <strong>
-      Ernährungsplan erstellen
-     </strong>
-     <span>
-      Wähle Tier und Kategorie – wir zeigen dir einen Plan und passende Produkte.
-     </span>
-    </div>
-    <p class="plan-warning" role="note">
-     <strong>
-      Wichtig:
-     </strong>
-     Der Plan ist eine allgemeine Orientierung, keine Diagnose und ersetzt keine tierärztliche Beratung. Diätfutter nur nach Diagnose und Rücksprache füttern. Bei Fragen, Futterverweigerung oder Veränderungen die Tierarztpraxis kontaktieren.
-    </p>
-    <form class="fields plan-fields" id="planForm">
-     <label>
-      Tier
-      <select id="planAnimal" required="">
-       <option value="">
-        Bitte wählen
-       </option>
-       <option>
-        Hund
-       </option>
-       <option>
-        Katze
-       </option>
-      </select>
-     </label>
-     <label>
-      Krankheit / Kategorie
-      <select id="planCondition" required="">
-       <option value="">
-        Bitte wählen
-       </option>
-      </select>
-     </label>
-     <label>
-      Name des Tiers (freiwillig)
-      <input id="planPet" maxlength="40" placeholder="z. B. Bello"/>
-     </label>
-     <button class="btn solid" id="planSubmit" type="submit">
-      Plan erstellen ↗
-     </button>
-    </form>
-    <p id="planMessage" role="status">
-    </p>
-    <div hidden="" id="planResult">
     </div>
    </section>
    <section class="bottom-banner">
@@ -474,6 +506,16 @@
     Meine Bestellungen
    </h2>
    <div id="ordersList">
+   </div>
+  </dialog>
+  <dialog class="wide" id="plans">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()">
+    ×
+   </button>
+   <h2>
+    Meine Ernährungspläne
+   </h2>
+   <div id="plansList">
    </div>
   </dialog>
   <dialog id="auth">
