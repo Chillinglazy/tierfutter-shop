@@ -633,8 +633,28 @@ label.check a,
 }
 
 /* ERNÄHRUNGSPLAN */
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px
+}
+
+.hero-buttons .btn:not(.solid) {
+  background: white
+}
+
 .plan {
-  margin-top: 48px
+  margin-top: 32px;
+  scroll-margin-top: 16px
+}
+
+.plan-title {
+  margin-top: 0
+}
+
+.plan-title h2 {
+  margin-top: 8px
 }
 
 .plan-warning {
@@ -648,38 +668,175 @@ label.check a,
   color: #6b5320
 }
 
-.plan-fields {
-  grid-template-columns: repeat(3, 1fr) auto;
-  align-items: end
+.plan-box {
+  margin: 0 0 16px;
+  padding: 20px 22px 22px;
+  background: #f0f5ed;
+  border: 0;
+  border-radius: 18px
 }
 
-.plan-fields .btn {
-  padding: 13px 20px
+.plan-box legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 0;
+  font-size: 17px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px
+}
+
+.plan-box legend + * {
+  clear: both
+}
+
+.step-no {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  color: white;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center
+}
+
+.choice-grid {
+  display: grid;
+  gap: 12px
+}
+
+.choice-grid.animals {
+  grid-template-columns: repeat(2, minmax(0, 220px))
+}
+
+.choice-grid.conditions {
+  grid-template-columns: repeat(4, 1fr)
+}
+
+label.choice {
+  position: relative;
+  font-weight: normal
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0
+}
+
+.choice span {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: white;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s
+}
+
+.choice-grid.animals span {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px
+}
+
+.choice strong {
+  font-size: 14px
+}
+
+.choice small {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted)
+}
+
+.choice-icon {
+  font-size: 26px;
+  font-weight: normal
+}
+
+.choice span:hover {
+  border-color: #a9c2a1
+}
+
+.choice input:checked + span {
+  border-color: var(--green);
+  background: var(--mint)
+}
+
+.choice input:focus-visible + span {
+  outline: 3px solid #71956a;
+  outline-offset: 2px
+}
+
+.plan-last {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) auto;
+  gap: 12px;
+  align-items: end;
+  justify-content: start
+}
+
+.plan-last .btn {
+  padding: 13px 22px
 }
 
 #planMessage {
-  font-size: 13px
+  font-size: 13px;
+  margin: 10px 0 0
 }
 
 #planResult {
   margin-top: 10px;
-  padding: 24px;
+  padding: 26px;
   background: white;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  scroll-margin-top: 20px
+  border-radius: 18px;
+  scroll-margin-top: 16px
 }
 
 .plan-head {
   display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 16px
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line)
+}
+
+.plan-icon {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--mint);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center
+}
+
+.plan-icon.small {
+  width: 44px;
+  height: 44px;
+  font-size: 22px
+}
+
+.plan-head-text {
+  flex: 1
 }
 
 .plan-head h3 {
   font: 26px Georgia, serif;
-  margin: 8px 0
+  margin: 6px 0
 }
 
 .plan-head p {
@@ -687,32 +844,39 @@ label.check a,
   font-size: 14px
 }
 
+.plan-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap
+}
+
 .plan-steps {
   margin: 22px 0;
   display: grid;
-  gap: 10px
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px
 }
 
 .plan-step {
-  display: grid;
-  grid-template-columns: 130px 1fr;
+  display: flex;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: #f6f9f4;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   line-height: 1.5
 }
 
-.plan-step dt {
-  font-weight: bold
+.plan-step p {
+  margin: 4px 0 0
 }
 
-.plan-step dd {
-  margin: 0
+.step-icon {
+  font-size: 22px
 }
 
 .plan-step.important {
+  grid-column: 1 / -1;
   background: #fff7e8;
   color: #6b5320
 }
@@ -725,9 +889,27 @@ label.check a,
   margin: 22px 0 0
 }
 
+.saved-plan {
+  display: flex;
+  align-items: center;
+  gap: 14px
+}
+
+.saved-plan > div:nth-child(2) {
+  flex: 1
+}
+
+.saved-plan .dialog-buttons {
+  margin: 0
+}
+
 @media(max-width:900px) {
-  .fields.plan-fields {
+  .choice-grid.conditions {
     grid-template-columns: repeat(2, 1fr)
+  }
+
+  .plan-steps {
+    grid-template-columns: 1fr
   }
 
   .fields {
@@ -874,21 +1056,30 @@ label.check a,
     gap: 12px
   }
 
-  .fields.plan-fields {
+  .choice-grid.conditions,
+  .plan-last {
     grid-template-columns: 1fr
   }
 
+  .choice-grid.animals {
+    grid-template-columns: repeat(2, 1fr)
+  }
+
+  .plan-box,
   #planResult {
     padding: 16px
   }
 
   .plan-head {
-    flex-direction: column
+    flex-wrap: wrap
   }
 
-  .plan-step {
-    grid-template-columns: 1fr;
-    gap: 4px
+  .plan-actions {
+    width: 100%
+  }
+
+  .saved-plan {
+    flex-wrap: wrap
   }
 }
 

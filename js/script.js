@@ -216,6 +216,8 @@ function showUser() {
   info.hidden = !currentUser;
   document.getElementById('logoutBtn').hidden = !currentUser;
   document.getElementById('ordersBtn').hidden = !currentUser;
+  document.getElementById('plansBtn').hidden = !currentUser;
+  updatePlanSave();
   document.getElementById('registerBtn').hidden = !!currentUser;
   document.getElementById('loginBtn').hidden = !!currentUser;
   document.getElementById('cartNote').textContent = currentUser ? 'Dein Warenkorb ist in deinem Konto gespeichert.' : 'Als Gast wird der Warenkorb auf diesem Gerät gespeichert. Du kannst auch ohne Konto bestellen.'
@@ -295,50 +297,119 @@ async function openOrders() {
     list.textContent = err.message
   }
 }
-// ERNÄHRUNGSPLAN: Kategorien laden, Plan von diet_plan.php holen und anzeigen.
+// ERNÄHRUNGSPLAN: Kategorien als Kacheln laden, Plan von diet_plan.php holen und anzeigen.
+const stepIcons = { Futter: '🥣', Tagesablauf: '🕒', Leckerlis: '🍪', Vermeiden: '🚫', Kontrolle: '📋', Wichtig: '⚠️' };
+let shownPlan = null; // {condition_id, animal, pet_name} des angezeigten Plans
+
 async function loadConditions() {
-  const select = document.getElementById('planCondition');
+  const box = document.getElementById('planConditions');
   try {
     const { conditions } = await api('diet_plan.php');
-    select.insertAdjacentHTML('beforeend', conditions.map(c => `<option value="${c.condition_id}">${esc(c.name)}</option>`).join(''))
+    box.innerHTML = conditions.map((c, i) => `<label class="choice">
+      <input name="planCondition" type="radio" value="${c.condition_id}"${i ? '' : ' required'}>
+      <span><b class="choice-icon">${esc(c.icon)}</b><strong>${esc(c.name)}</strong><small>${esc(c.goal)}</small></span>
+      </label>`).join('')
   } catch (err) {
-    document.getElementById('planMessage').textContent = err.message
+    box.innerHTML = '<p class="demo">' + esc(err.message) + '</p>'
   }
 }
 
 document.getElementById('planForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const animal = document.getElementById('planAnimal').value;
-  const conditionId = document.getElementById('planCondition').value;
-  const pet = document.getElementById('planPet').value.trim();
+  const checked = name => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+  const button = document.getElementById('planSubmit');
+  button.disabled = true;
+  await showPlan(checked('planCondition'), checked('planAnimal'), document.getElementById('planPet').value.trim());
+  button.disabled = false
+});
+
+async function showPlan(conditionId, animal, pet) {
   const result = document.getElementById('planResult');
   const message = document.getElementById('planMessage');
-  const button = document.getElementById('planSubmit');
   message.textContent = '';
-  button.disabled = true;
   try {
     const { plan } = await api('diet_plan.php?condition_id=' + encodeURIComponent(conditionId) + '&animal=' + encodeURIComponent(animal));
+    shownPlan = { condition_id: plan.condition_id, animal: plan.animal, pet_name: pet };
     const list = plan.product_ids.map(id => products.find(p => p.product_id === id)).filter(Boolean);
+    // Zeilen mit gleicher Überschrift (z. B. zweimal "Wichtig") in einer Karte zeigen
+    const groups = [];
+    plan.steps.forEach(s => {
+      const g = groups.find(g => g.label === s.label);
+      g ? g.texts.push(s.text) : groups.push({ label: s.label, texts: [s.text] })
+    });
     result.innerHTML = `<div class="plan-head">
-      <div>
+      <span class="plan-icon">${esc(plan.icon)}</span>
+      <div class="plan-head-text">
       <div class="eyebrow">Ernährungsplan · ${esc(plan.animal)}</div>
       <h3>${pet ? 'Für ' + esc(pet) + ': ' : ''}${esc(plan.name)}</h3>
       <p><strong>Ziel:</strong> ${esc(plan.goal)}</p>
       </div>
-      <button class="btn" type="button" onclick="window.print()">Plan drucken</button>
+      <div class="plan-actions">
+      <button class="btn solid" type="button" id="planSave" onclick="savePlan()"></button>
+      <button class="btn" type="button" onclick="window.print()">Drucken</button>
       </div>
-      <dl class="plan-steps">${plan.steps.map(s => `<div class="plan-step${s.label === 'Wichtig' ? ' important' : ''}"><dt>${esc(s.label)}</dt><dd>${esc(s.text)}</dd></div>`).join('')}</dl>
-      <h3 class="plan-products-title">Passende Produkte</h3>
+      </div>
+      <div class="plan-steps">${groups.map(g => `<div class="plan-step${g.label === 'Wichtig' ? ' important' : ''}">
+        <span class="step-icon">${stepIcons[g.label] || '•'}</span>
+        <div><strong>${esc(g.label)}</strong>${g.texts.map(t => `<p>${esc(t)}</p>`).join('')}</div>
+        </div>`).join('')}</div>
+      <h3 class="plan-products-title">Passende Produkte für ${esc(plan.animal === 'Hund' ? 'deinen Hund' : 'deine Katze')}</h3>
       <div class="grid">${list.map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
       <p class="plan-warning"><strong>Tierarztpraxis kontaktieren:</strong> Die Produkte sind Beispiele aus unserem Sortiment. Welche Diät, welche Menge und wie lange, legst du gemeinsam mit deiner Tierarztpraxis fest.</p>`;
     result.hidden = false;
+    updatePlanSave();
     result.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     message.textContent = err.message
-  } finally {
-    button.disabled = false
   }
-});
+}
+
+// Speichern-Knopf: eingeloggt speichern, sonst zuerst einloggen.
+function updatePlanSave() {
+  const button = document.getElementById('planSave');
+  if (button) button.textContent = currentUser ? '♡ Plan speichern' : 'Einloggen und Plan speichern';
+}
+
+async function savePlan() {
+  if (!currentUser) return openAuth('login');
+  try {
+    await api('saved_plans.php', { action: 'save', ...shownPlan });
+    toast('♡ Plan unter "Meine Pläne" gespeichert')
+  } catch (err) {
+    toast(err.message)
+  }
+}
+
+// MEINE PLÄNE: gespeicherte Pläne des Kunden (saved_plans.php)
+async function openPlans(data) {
+  const list = document.getElementById('plansList');
+  if (!data) {
+    list.textContent = 'Wird geladen …';
+    document.getElementById('plans').showModal()
+  }
+  try {
+    const { plans } = await api('saved_plans.php', data);
+    list.innerHTML = plans.length ? plans.map(p => `<div class="order saved-plan">
+      <span class="plan-icon small">${esc(p.icon)}</span>
+      <div><strong>${p.pet_name ? esc(p.pet_name) + ' · ' : ''}${esc(p.name)}</strong><br>
+      <small>${esc(p.animal)} · gespeichert am ${new Date(p.created_at.replace(' ', 'T')).toLocaleDateString('de-CH')}</small></div>
+      <div class="dialog-buttons">
+      <button class="btn solid" onclick="openSavedPlan(${p.condition_id}, '${esc(p.animal)}', this.dataset.pet)" data-pet="${esc(p.pet_name)}">Anzeigen</button>
+      <button class="btn" onclick="openPlans({ action: 'delete', plan_id: ${p.plan_id} })">Löschen</button>
+      </div>
+      </div>`).join('') : 'Du hast noch keine Pläne gespeichert. Erstelle einen Plan und klicke auf "Plan speichern".'
+  } catch (err) {
+    list.textContent = err.message
+  }
+}
+
+function openSavedPlan(conditionId, animal, pet) {
+  document.getElementById('plans').close();
+  document.querySelectorAll('input[name="planAnimal"]').forEach(r => r.checked = r.value === animal);
+  document.querySelectorAll('input[name="planCondition"]').forEach(r => r.checked = +r.value === conditionId);
+  document.getElementById('planPet').value = pet || '';
+  showPlan(conditionId, animal, pet || '')
+}
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
   if (e.target === d) {
     const r = d.getBoundingClientRect();
