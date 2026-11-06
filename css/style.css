@@ -958,8 +958,20 @@ label.choice {
   font-size: 14px
 }
 
-h4.plan-products-title {
-  font-size: 16px
+.plan-product {
+  display: flex;
+  flex-direction: column;
+  gap: 6px
+}
+
+.plan-product .card {
+  flex: 1
+}
+
+.fits {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 4px
 }
 
 .saved-plan {

@@ -425,7 +425,9 @@ drei Schritten per Kachel das Tier und eine oder mehrere Krankheiten,
 optional den Namen des Tiers. Bei mehreren Krankheiten zeigt der Plan zuerst
 einen Hinweis, dass sich die Pläne widersprechen können, und die passenden
 Einträge aus `combination_notes` (z. B. Niere + Diabetes). Danach folgt pro
-Krankheit ein eigener Abschnitt mit Ziel, Plan und passenden Produkten. `diet_plan.php` liefert Ziel,
+Krankheit ein eigener Abschnitt mit Ziel und Plan. Die empfohlenen Produkte
+stehen für alle gewählten Krankheiten zusammen in einem Bereich, jedes
+Produkt nur einmal, mit dem Vermerk "Passt zu: …". `diet_plan.php` liefert Ziel,
 die Plan-Schritte für dieses Tier und die IDs der passenden Produkte.
 `script.js` zeigt den Plan und die Produktkarten (mit Warenkorb-Knopf) an.
 "Drucken" druckt nur den Plan. Mit "Plan speichern" legen eingeloggte Kunden
@@ -513,7 +515,7 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 9. Eingeloggt bestellen, danach "Bestellungen" im Header öffnen: Die Bestellung erscheint.
 10. In phpMyAdmin prüfen: `orders`, `order_items` und (mit Häkchen) `newsletter` sind gefüllt.
 11. Ernährungsplan: Katze + Übergewicht → Plan mit "Katzen niemals hungern lassen" und dem Produkt "Leicht & Fit" (Katze). Hund + Diabetes → Futter-Zeile nur für Hunde. Ein Produkt aus dem Plan in den Warenkorb legen.
-12. Katze + Chronische Nierenerkrankung + Diabetes wählen → Hinweis "Mehrere Krankheiten" mit Text zu Niere + Diabetes, zwei Abschnitte mit je eigenen Produkten.
+12. Katze + Chronische Nierenerkrankung + Diabetes wählen → Hinweis "Mehrere Krankheiten" mit Text zu Niere + Diabetes, zwei Abschnitte und ein gemeinsamer Bereich "Empfohlene Produkte".
 13. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
 
 ## Entscheidungen im Projektverlauf
@@ -533,7 +535,7 @@ aufgebaut ist:
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
-| Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
+| Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
 | Bestehende Produkte im Plan | Nur dort zugeordnet, wo sie passen (Senior-Futter bei Gelenkproblemen), für alle Kategorien zusätzlich neue Diät-Produkte | «Getreidefrei» ist z. B. nicht automatisch für Allergiker geeignet |
 | Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
 

@@ -351,7 +351,13 @@ async function showPlan(ids, animal, pet) {
     shownPlan = { condition_ids: plan.conditions.map(c => c.condition_id), animal: plan.animal, pet_name: pet };
     const several = plan.conditions.length > 1;
     const title = plan.conditions.map(c => esc(c.name)).join(' + ');
-    const productList = c => c.product_ids.map(id => products.find(p => p.product_id === id)).filter(Boolean);
+    // ALLE PASSENDEN PRODUKTE in einem Bereich, jedes Produkt nur einmal, mit "Passt zu"
+    const fits = {}, order = [];
+    plan.conditions.forEach(c => c.product_ids.forEach(id => {
+      if (!fits[id]) order.push(id);
+      (fits[id] ??= []).push(c.name)
+    }));
+    const planProducts = order.map(id => products.find(p => p.product_id === id)).filter(Boolean);
     result.innerHTML = `<div class="plan-head">
       <span class="plan-icon">${several ? '🩺' : esc(plan.conditions[0].icon)}</span>
       <div class="plan-head-text">
@@ -373,9 +379,9 @@ async function showPlan(ids, animal, pet) {
       ${plan.conditions.map(c => `<section class="plan-part" id="plan-c${c.condition_id}">
         ${several ? `<h3 class="plan-part-title"><span>${esc(c.icon)}</span> ${esc(c.name)}</h3><p class="plan-goal"><strong>Ziel:</strong> ${esc(c.goal)}</p>` : ''}
         <div class="plan-steps">${stepCards(c.steps)}</div>
-        <h4 class="plan-products-title">Passende Produkte${several ? ' bei ' + esc(c.name) : ''} für ${plan.animal === 'Hund' ? 'deinen Hund' : 'deine Katze'}</h4>
-        <div class="grid">${productList(c).map(productCard).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
         </section>`).join('')}
+      <h3 class="plan-products-title">Empfohlene Produkte für ${plan.animal === 'Hund' ? 'deinen Hund' : 'deine Katze'}</h3>
+      <div class="grid">${planProducts.map(p => several ? `<div class="plan-product">${productCard(p)}<small class="fits">Passt zu: ${fits[p.product_id].map(esc).join(', ')}</small></div>` : productCard(p)).join('') || '<div class="empty">Für diese Auswahl gibt es noch kein passendes Produkt.</div>'}</div>
       <p class="plan-warning"><strong>Tierarztpraxis kontaktieren:</strong> Die Produkte sind Beispiele aus unserem Sortiment. Welche Diät, welche Menge und wie lange, legst du gemeinsam mit deiner Tierarztpraxis fest.</p>`;
     result.hidden = false;
     updatePlanSave();
