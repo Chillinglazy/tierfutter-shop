@@ -53,6 +53,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/saved_plans.php`) | ✅ fertig |
 | Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
+| Online stellen: Anleitung und Upload-Paket für kostenloses Hosting (InfinityFree) | ✅ vorbereitet |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | Admin-Rolle, "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
@@ -102,6 +103,33 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
      noch einmal: Sie rüstet fehlende Teile nach und übernimmt gespeicherte
      Pläne in die neue Struktur.
 5. **Im Browser öffnen:** `http://localhost/tierfutter-shop/`
+
+---
+
+## Online stellen (kostenloses Hosting, z. B. InfinityFree)
+
+Der Shop braucht nur PHP 8.1+ und MySQL/MariaDB. Alle Pfade sind relativ,
+der Shop läuft deshalb im Hauptordner (`htdocs/`) genauso wie in einem
+Unterordner. Ablauf:
+
+1. Beim Anbieter ein Konto und eine Website anlegen, dann im Control Panel
+   eine MySQL-Datenbank erstellen. Der Anbieter zeigt Host (z. B.
+   `sqlXXX.infinityfree.com`), Datenbankname, Benutzer und Passwort an.
+2. **Datenbank:** In phpMyAdmin des Anbieters die neue Datenbank links
+   auswählen und `schema.sql` importieren, aber **ohne** die Zeilen
+   `CREATE DATABASE …` und `USE tierfutter_shop;` (auf Shared Hosting darf
+   man keine eigene Datenbank anlegen, der Name ist vorgegeben).
+3. **Dateien hochladen** (FTP, z. B. FileZilla, oder Dateimanager des
+   Anbieters) in den Ordner `htdocs/`: `index.html`, `agb.html`,
+   `datenschutz.html`, `.htaccess`, `api/`, `css/`, `js/`, `assets/`,
+   `includes/`. Nicht hochladen: `.git/`, `database/`, `Abgabe/`,
+   `README.md`, `CLAUDE.md`, `EER-Diagramm.png`.
+4. **Zugangsdaten:** Auf dem Server `includes/config.local.php` mit den
+   Werten aus Schritt 1 anlegen (Vorlage `config.local.example.php`).
+5. Die Website-Adresse öffnen, registrieren, bestellen, Ernährungsplan testen.
+
+Das lokale Upload-Paket (Ordner `online-upload/`) ist in `.gitignore`
+eingetragen, weil seine `config.local.php` echte Zugangsdaten enthält.
 
 ---
 
