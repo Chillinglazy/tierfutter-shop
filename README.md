@@ -53,7 +53,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/saved_plans.php`) | ✅ fertig |
 | Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
-| Online stellen: Anleitung und Upload-Paket für kostenloses Hosting (InfinityFree) | ✅ vorbereitet |
+| Online stellen bei InfinityFree: https://tierfutter-shop.great-site.net | ✅ online |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | Admin-Rolle, "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
@@ -106,30 +106,62 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 
 ---
 
-## Online stellen (kostenloses Hosting, z. B. InfinityFree)
+## Online stellen (InfinityFree)
 
-Der Shop braucht nur PHP 8.1+ und MySQL/MariaDB. Alle Pfade sind relativ,
-der Shop läuft deshalb im Hauptordner (`htdocs/`) genauso wie in einem
-Unterordner. Ablauf:
+**Live:** https://tierfutter-shop.great-site.net (kostenloses Hosting bei
+InfinityFree, PHP 8 und MySQL/MariaDB).
 
-1. Beim Anbieter ein Konto und eine Website anlegen, dann im Control Panel
-   eine MySQL-Datenbank erstellen. Der Anbieter zeigt Host (z. B.
-   `sqlXXX.infinityfree.com`), Datenbankname, Benutzer und Passwort an.
-2. **Datenbank:** In phpMyAdmin des Anbieters die neue Datenbank links
-   auswählen und `schema.sql` importieren, aber **ohne** die Zeilen
-   `CREATE DATABASE …` und `USE tierfutter_shop;` (auf Shared Hosting darf
-   man keine eigene Datenbank anlegen, der Name ist vorgegeben).
-3. **Dateien hochladen** (FTP, z. B. FileZilla, oder Dateimanager des
-   Anbieters) in den Ordner `htdocs/`: `index.html`, `agb.html`,
+Der Code musste dafür kaum geändert werden: Alle Pfade sind relativ
+(`api/products.php`), der Shop läuft deshalb im Hauptordner (`htdocs/`)
+genauso wie lokal im Unterordner `tierfutter-shop/`. Die Zugangsdaten stehen
+schon getrennt vom Code in `includes/config.local.php`.
+
+### Ablauf
+
+1. **Konto und Website:** Auf infinityfree.com registrieren, im Client Area
+   *Create Account* und eine Subdomain wählen (hier
+   `tierfutter-shop.great-site.net`).
+2. **Datenbank anlegen:** Im Control Panel unter *MySQL Databases* eine
+   Datenbank erstellen (Name `shop` → `if0_<Kontonummer>_shop`). Oben stehen
+   *MySQL Hostname* (z. B. `sql301.infinityfree.com`), *Username* und
+   *Password* (Augen-Symbol).
+3. **Datenbank importieren:** Neben der Datenbank auf *Admin* (phpMyAdmin),
+   links die Datenbank anklicken, *Importieren*. Importiert wird `schema.sql`
+   **ohne** die Zeilen `CREATE DATABASE …` und `USE tierfutter_shop;` (auf
+   Shared Hosting ist der Datenbankname vorgegeben) und mit
+   `SET NAMES utf8mb4;` am Anfang (damit Umlaute stimmen). Im lokalen
+   Upload-Paket heisst diese Datei `datenbank-import.sql`.
+4. **Dateien hochladen:** Im *File Manager* den Ordner `htdocs/` öffnen, die
+   Beispieldatei löschen und hochladen: `index.html`, `agb.html`,
    `datenschutz.html`, `.htaccess`, `api/`, `css/`, `js/`, `assets/`,
-   `includes/`. Nicht hochladen: `.git/`, `database/`, `Abgabe/`,
-   `README.md`, `CLAUDE.md`, `EER-Diagramm.png`.
-4. **Zugangsdaten:** Auf dem Server `includes/config.local.php` mit den
-   Werten aus Schritt 1 anlegen (Vorlage `config.local.example.php`).
-5. Die Website-Adresse öffnen, registrieren, bestellen, Ernährungsplan testen.
+   `includes/` (am einfachsten als ZIP hochladen und dort entpacken).
+   `index.html` muss direkt in `htdocs/` liegen. Nicht hochladen: `.git/`,
+   `database/`, `Abgabe/`, `README.md`, `CLAUDE.md`, `EER-Diagramm.png`.
+5. **Zugangsdaten:** Auf dem Server `includes/config.local.php` mit Host,
+   Datenbankname, Benutzer und Passwort aus Schritt 2 füllen (Vorlage
+   `config.local.example.php`; der Host ist **nicht** `localhost`).
+6. **Testen:** Adresse öffnen, Produkte erscheinen, registrieren, bestellen,
+   Ernährungsplan ausprobieren. Optional unter *Free SSL Certificates* ein
+   Zertifikat für `https://` anlegen.
 
-Das lokale Upload-Paket (Ordner `online-upload/`) ist in `.gitignore`
-eingetragen, weil seine `config.local.php` echte Zugangsdaten enthält.
+Das lokale Upload-Paket (Ordner `online-upload/`: `htdocs/`, ZIP,
+`datenbank-import.sql`, `ANLEITUNG.md`) ist in `.gitignore` eingetragen,
+weil seine `config.local.php` das echte Passwort enthält.
+
+### Fehlersuche
+
+Der Shop zeigt Fehlerdetails absichtlich nicht im Browser. Am schnellsten
+grenzt man einen Fehler ein, indem man die API direkt aufruft:
+`https://tierfutter-shop.great-site.net/api/products.php`.
+
+| Anzeige | Ursache | Lösung |
+|---|---|---|
+| `Serverfehler. Bitte später erneut versuchen.` | Keine Verbindung zur Datenbank | Passwort, Host und Datenbankname in `includes/config.local.php` prüfen. **So war es beim ersten Test:** Es stand noch der Platzhalter statt des MySQL-Passworts drin, deshalb erschienen keine Produkte. |
+| `config.local.php fehlt` | Datei nicht hochgeladen | Datei nach `htdocs/includes/` legen |
+| Seite nicht gefunden (404) | Dateien im falschen Ordner, z. B. `htdocs/htdocs/` | Inhalt eine Ebene höher verschieben |
+| `{"products":[]}` | Import in eine andere Datenbank | Richtige Datenbank anklicken, Import wiederholen |
+| Umlaute kaputt (`Ã¼`) | Import ohne UTF-8 | Import mit `SET NAMES utf8mb4;` wiederholen |
+| Produkte als JSON, Seite trotzdem leer | Alte Dateien im Browser-Cache | **Strg + F5** |
 
 ---
 
@@ -566,6 +598,7 @@ aufgebaut ist:
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
 | Bestehende Produkte im Plan | Nur dort zugeordnet, wo sie passen (Senior-Futter bei Gelenkproblemen), für alle Kategorien zusätzlich neue Diät-Produkte | «Getreidefrei» ist z. B. nicht automatisch für Allergiker geeignet |
 | Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
+| Hosting | Kostenlos bei InfinityFree, Upload über den Dateimanager, Datenbank mit angepasster `schema.sql` | Schulprojekt ohne Budget; PHP und MySQL wie lokal, kein Code-Umbau nötig. Auf Shared Hosting ist der Datenbankname vorgegeben, darum ohne `CREATE DATABASE`/`USE`. |
 
 ## Hinweise
 
