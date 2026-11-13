@@ -25,3 +25,6 @@ desktop.ini
 
 # Lokale Exporte (z. B. Diagramme aus MySQL Workbench)
 EER-Diagramm.png
+
+# Upload-Paket für das Hosting (enthält echte Zugangsdaten)
+online-upload/

@@ -25,7 +25,7 @@ async function api(file, data) {
     } : {});
     json = await res.json()
   } catch {
-    throw new Error('Server nicht erreichbar. Seite über XAMPP öffnen (http://localhost/...).')
+    throw new Error('Server nicht erreichbar. Bitte Seite neu laden oder später erneut versuchen.')
   }
   if (!res.ok) throw new Error(json.error || 'Unbekannter Fehler.');
   return json
