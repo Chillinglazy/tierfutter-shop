@@ -8,6 +8,8 @@ German-language school project: a small pet-food web shop (Tierfutter-Shop, Barg
 
 ## Running and checking
 
+- **Current setup (since 2026-11-20): the user no longer uses XAMPP.** Locally only MySQL Community Server 8 + MySQL Workbench (scripts run with the lightning icon); the website runs only on InfinityFree (File Manager uploads, phpMyAdmin for the live DB). Give instructions for that setup, not localhost/XAMPP. The XAMPP notes below are historical; for testing use a PHP built-in server + MySQL in the scratchpad.
+
 - The site only works through Apache (PHP), not via file:// or Live Server: `http://localhost/tierfutter-shop/`. `C:\xampp\htdocs\tierfutter-shop` is a directory junction to this folder, so edits are live after a browser reload. Apache and MySQL must be running in the XAMPP Control Panel (the user starts them; they may be off).
 - PHP and MySQL are not on PATH. Use the XAMPP binaries:
   - Lint: `/c/xampp/php/php.exe -l api/order.php` (loop over `api/*.php includes/*.php`)

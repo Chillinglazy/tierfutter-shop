@@ -24,7 +24,13 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 - Technik: PHP mit PDO (Standard, nicht vorgegeben)
 - Weitere Funktionen sind freiwillig, es gibt keine Vorgaben der Lehrperson
 
-**Umgebung**
+**Umgebung (aktuell)**
+- Website: online bei InfinityFree (PHP 8, MySQL/MariaDB), siehe *Online stellen*
+- Lokal: nur MySQL Community Server 8 mit MySQL Workbench (kein XAMPP mehr).
+  SQL-Dateien in Workbench öffnen und mit dem Blitz-Symbol ausführen.
+- Alle SQL-Skripte laufen mit MySQL 8 und MariaDB.
+
+**Umgebung (früher)**
 - Windows mit XAMPP Control Panel v3.3.0 (Apache, MariaDB 10.4, PHP 8.2)
 - phpMyAdmin oder MySQL Workbench zum Verwalten der Datenbank
 - Eigene Datenbank `tierfutter_shop`. Die vorhandenen Datenbanken
@@ -60,7 +66,10 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 
 ---
 
-## Installation (XAMPP)
+## Installation (XAMPP, früherer lokaler Betrieb)
+
+> Wird nicht mehr verwendet. Die Website läuft bei InfinityFree, lokal gibt es
+> nur noch MySQL 8 mit Workbench. Die Anleitung bleibt für die Dokumentation.
 
 PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 `index.html` und nicht mit "Live Server".
