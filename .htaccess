@@ -8,3 +8,12 @@ RedirectMatch 404 /\.
 <FilesMatch "\.(md|code-workspace)$">
   Require all denied
 </FilesMatch>
+
+# HTML-Seiten nicht zwischenspeichern: Der Browser fragt bei jedem Aufruf nach,
+# ob es eine neue Version gibt (sonst sieht man nach einem Upload die alte Seite).
+# CSS und JS haben dafür ?v=N im Dateinamen.
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
