@@ -5,4 +5,8 @@ require __DIR__ . '/../includes/config.php';
 if (empty($_SESSION['user_id'])) {
   json_response(['user' => null]);
 }
-json_response(['user' => ['name' => $_SESSION['name'], 'email' => $_SESSION['email'] ?? '']]);
+json_response(['user' => [
+  'name' => $_SESSION['name'],
+  'email' => $_SESSION['email'] ?? '',
+  'admin' => user_is_admin($pdo, (int) $_SESSION['user_id']),
+]]);

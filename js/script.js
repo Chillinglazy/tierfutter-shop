@@ -217,6 +217,7 @@ function showUser() {
   document.getElementById('logoutBtn').hidden = !currentUser;
   document.getElementById('ordersBtn').hidden = !currentUser;
   document.getElementById('plansBtn').hidden = !currentUser;
+  document.getElementById('adminBtn').hidden = !currentUser?.admin; // Server prüft trotzdem bei jeder Anfrage
   updatePlanSave();
   document.getElementById('registerBtn').hidden = !!currentUser;
   document.getElementById('loginBtn').hidden = !!currentUser;

@@ -1,0 +1,243 @@
+/* Tierfutter-Shop – Datenbankverwaltung (admin.html), ergänzt style.css */
+
+.admin {
+  max-width: 1280px;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 28px;
+  padding-bottom: 60px
+}
+
+.admin-side {
+  background: var(--mint);
+  border-radius: 20px;
+  padding: 20px;
+  align-self: start
+}
+
+.admin-side h2 {
+  margin-top: 0;
+  font-size: 18px
+}
+
+.admin-side ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px
+}
+
+.admin-side li button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  background: transparent;
+  color: var(--green);
+  padding: 8px 10px;
+  border-radius: 10px
+}
+
+.admin-side li button:hover,
+.admin-side li button.active {
+  background: white
+}
+
+.admin-side li span {
+  overflow-wrap: anywhere
+}
+
+.admin-side li small {
+  color: var(--muted)
+}
+
+.admin-side .btn {
+  width: 100%
+}
+
+.admin-content {
+  min-width: 0
+}
+
+.admin-content h1 {
+  margin-top: 0
+}
+
+.admin-content h2 {
+  font-size: 18px;
+  margin: 28px 0 12px
+}
+
+.admin-content h2 small {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 13px;
+  margin-left: 8px
+}
+
+.admin-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px
+}
+
+.admin-buttons {
+  display: flex;
+  gap: 10px
+}
+
+.admin-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px
+}
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap
+}
+
+.admin-table th {
+  background: var(--mint)
+}
+
+.admin-table tr:last-child td {
+  border-bottom: 0
+}
+
+.admin-table td {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis
+}
+
+.null {
+  color: var(--muted)
+}
+
+.row-actions {
+  text-align: right
+}
+
+.link {
+  background: transparent;
+  color: var(--green);
+  text-decoration: underline;
+  padding: 0 4px
+}
+
+.danger,
+.link.danger {
+  color: #a3352b
+}
+
+.btn.danger {
+  border-color: #e0b4ae
+}
+
+.admin-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+  margin-top: 14px
+}
+
+.admin-inline label {
+  flex: 1 1 180px
+}
+
+.admin-inline label.check,
+.create-col label.check {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 14px
+}
+
+.admin-inline label.check input,
+.create-col label.check input {
+  width: auto;
+  margin: 0
+}
+
+.admin-pages {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px
+}
+
+.admin-pages button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--line);
+  color: var(--green)
+}
+
+.admin-pages button.active {
+  background: var(--green);
+  color: white
+}
+
+/* Formulare in den Dialogen */
+#rowFields label small {
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px
+}
+
+textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #dce4d7;
+  border-radius: 8px;
+  font: inherit;
+  color: var(--green)
+}
+
+.create-col {
+  display: flex;
+  gap: 12px;
+  align-items: end
+}
+
+.create-col label {
+  flex: 1
+}
+
+.create-col .link {
+  font-size: 22px;
+  text-decoration: none;
+  padding-bottom: 16px
+}
+
+.admin-denied {
+  text-align: center;
+  padding: 80px 32px
+}
+
+@media(max-width:900px) {
+  .admin {
+    grid-template-columns: 1fr
+  }
+
+  .create-col {
+    flex-wrap: wrap
+  }
+}

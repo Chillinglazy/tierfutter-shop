@@ -8,6 +8,7 @@ config.local.php
 !schema.sql
 !update_orders.sql
 !update_ernaehrungsplan.sql
+!update_admin.sql
 
 # Logs und temporäre Dateien
 *.log

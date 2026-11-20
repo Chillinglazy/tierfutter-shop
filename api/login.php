@@ -24,4 +24,8 @@ if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
 }
 
 log_in($pdo, (int) $user['user_id'], $user['name'], $email);
-json_response(['user' => ['name' => $user['name'], 'email' => $email]]);
+json_response(['user' => [
+  'name' => $user['name'],
+  'email' => $email,
+  'admin' => user_is_admin($pdo, (int) $user['user_id']),
+]]);
