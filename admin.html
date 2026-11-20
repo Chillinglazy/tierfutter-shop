@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <meta content="noindex" name="robots"/>
+  <title>
+   Datenbankverwaltung · Tierfutter-Shop
+  </title>
+  <link href="css/style.css?v=6" rel="stylesheet"/>
+  <link href="css/admin.css?v=1" rel="stylesheet"/>
+  <script defer="" src="js/admin.js?v=1">
+  </script>
+ </head>
+ <body>
+  <div class="notice">
+   ADMIN-BEREICH · ÄNDERUNGEN WIRKEN SOFORT IN DER DATENBANK
+  </div>
+  <header>
+   <a class="brand" href="index.html">
+    <img alt="Tierfutter Logo mit Hund und Katze" src="assets/logo.png"/>
+    <span>
+     tierfutter-shop
+     <small>
+      DATENBANKVERWALTUNG
+     </small>
+    </span>
+   </a>
+   <div class="actions">
+    <span class="user-info" id="adminUser">
+    </span>
+    <a class="btn" href="index.html">
+     ← Zurück zum Shop
+    </a>
+   </div>
+  </header>
+
+  <!-- KEIN ZUGRIFF: wird angezeigt, wenn der Server 401/403 meldet -->
+  <main class="admin-denied" hidden="" id="denied">
+   <h1>
+    Kein Zugriff
+   </h1>
+   <p id="deniedText">
+   </p>
+   <a class="btn solid" href="index.html">
+    Zum Shop und einloggen
+   </a>
+  </main>
+
+  <main class="admin" hidden="" id="adminMain">
+   <!-- TABELLENLISTE -->
+   <aside class="admin-side">
+    <h2>
+     Tabellen
+    </h2>
+    <ul id="tableList">
+    </ul>
+    <button class="btn solid" onclick="openCreateTable()" type="button">
+     + Neue Tabelle
+    </button>
+   </aside>
+
+   <!-- AUSGEWÄHLTE TABELLE -->
+   <section class="admin-content">
+    <div id="welcome">
+     <h1>
+      Datenbank verwalten
+     </h1>
+     <p>
+      Links eine Tabelle wählen. Du kannst Zeilen hinzufügen, bearbeiten und löschen,
+      neue Tabellen anlegen und Spalten ergänzen. Die Tabellen des Shops (mit 🔒) können
+      nicht gelöscht werden, ihre Spalten auch nicht.
+     </p>
+    </div>
+    <div hidden="" id="tableView">
+     <div class="admin-title">
+      <h1 id="tableName">
+      </h1>
+      <div class="admin-buttons">
+       <button class="btn solid" onclick="openRow(null)" type="button">
+        + Neue Zeile
+       </button>
+       <button class="btn danger" id="dropTableBtn" onclick="openDropTable()" type="button">
+        Tabelle löschen
+       </button>
+      </div>
+     </div>
+
+     <h2>
+      Spalten
+     </h2>
+     <div class="admin-scroll">
+      <table class="admin-table" id="columnTable">
+      </table>
+     </div>
+     <form class="admin-inline" id="addColumnForm">
+      <label>
+       Neue Spalte
+       <input id="newColName" maxlength="64" placeholder="z. B. lieferant" required=""/>
+      </label>
+      <label>
+       Datentyp
+       <select class="type-select" id="newColType" required="">
+       </select>
+      </label>
+      <label class="check">
+       <input id="newColNull" type="checkbox"/>
+       darf leer sein
+      </label>
+      <button class="btn" type="submit">
+       Spalte hinzufügen
+      </button>
+     </form>
+
+     <h2>
+      Daten
+      <small id="rowInfo">
+      </small>
+     </h2>
+     <div class="admin-scroll">
+      <table class="admin-table" id="rowTable">
+      </table>
+     </div>
+     <div class="admin-pages" id="pager">
+     </div>
+    </div>
+   </section>
+  </main>
+
+  <!-- ZEILE HINZUFÜGEN / BEARBEITEN -->
+  <dialog class="wide" id="rowDialog">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()" type="button">
+    ×
+   </button>
+   <h2 id="rowTitle">
+   </h2>
+   <form id="rowForm">
+    <div id="rowFields">
+    </div>
+    <p class="demo">
+     Leeres Feld = kein Wert (NULL) bzw. Standardwert der Spalte.
+    </p>
+    <button class="btn solid" type="submit">
+     Speichern
+    </button>
+    <p id="rowMessage" role="status">
+    </p>
+   </form>
+  </dialog>
+
+  <!-- NEUE TABELLE -->
+  <dialog class="wide" id="createDialog">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()" type="button">
+    ×
+   </button>
+   <h2>
+    Neue Tabelle erstellen
+   </h2>
+   <form id="createForm">
+    <label>
+     Tabellenname
+     <input id="createName" maxlength="64" placeholder="z. B. lieferanten" required=""/>
+    </label>
+    <p class="demo">
+     Erlaubt sind Kleinbuchstaben a–z, Ziffern und _. Die Spalte
+     <b>id</b>
+     (Primärschlüssel, zählt automatisch hoch) wird immer angelegt.
+    </p>
+    <div id="createColumns">
+    </div>
+    <button class="btn" onclick="addCreateColumn()" type="button">
+     + Weitere Spalte
+    </button>
+    <button class="btn solid" type="submit">
+     Tabelle erstellen
+    </button>
+    <p id="createMessage" role="status">
+    </p>
+   </form>
+  </dialog>
+
+  <!-- TABELLE LÖSCHEN -->
+  <dialog id="dropDialog">
+   <button aria-label="Schliessen" class="close" onclick="this.closest('dialog').close()" type="button">
+    ×
+   </button>
+   <h2>
+    Tabelle löschen
+   </h2>
+   <form id="dropForm">
+    <p>
+     Die Tabelle
+     <b id="dropName">
+     </b>
+     wird mit allen Daten endgültig gelöscht. Zum Bestätigen den Namen eintippen:
+    </p>
+    <input autocomplete="off" id="dropConfirm" required=""/>
+    <button class="btn danger" type="submit">
+     Endgültig löschen
+    </button>
+    <p id="dropMessage" role="status">
+    </p>
+   </form>
+  </dialog>
+
+  <div id="toast" role="status">
+  </div>
+ </body>
+</html>

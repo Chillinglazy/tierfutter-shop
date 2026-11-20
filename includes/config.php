@@ -68,6 +68,7 @@ function require_login(): int {
 // Login durchführen: neue Session-ID, Warenkorb sicherstellen, Login protokollieren.
 function log_in(PDO $pdo, int $userId, string $name, string $email): void {
   session_regenerate_id(true);
+  unset($_SESSION['csrf']); // neues Token für die neue Session
   $_SESSION['user_id'] = $userId;
   $_SESSION['name'] = $name;
   $_SESSION['email'] = $email; // zum Vorausfüllen des Bestellformulars
@@ -77,4 +78,40 @@ function log_in(PDO $pdo, int $userId, string $name, string $email): void {
 
   $pdo->prepare('INSERT INTO login_log (user_id, ip_address) VALUES (?, ?)')
     ->execute([$userId, $_SERVER['REMOTE_ADDR'] ?? null]);
+}
+
+// ADMIN: Rolle bei jeder Anfrage frisch aus der Datenbank lesen (Änderungen gelten sofort).
+// Fehlt die Spalte role noch (update_admin.sql nicht importiert), ist niemand Admin.
+function user_is_admin(PDO $pdo, int $userId): bool {
+  try {
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    return $stmt->fetchColumn() === 'admin';
+  } catch (PDOException $e) {
+    return false;
+  }
+}
+
+function require_admin(PDO $pdo): int {
+  $userId = require_login();
+  if (!user_is_admin($pdo, $userId)) {
+    json_response(['error' => 'Nur für Administratoren.'], 403);
+  }
+  return $userId;
+}
+
+// CSRF-SCHUTZ für die Admin-Funktionen: geheimes Token pro Session,
+// muss bei jeder Änderung im Header X-CSRF-Token mitgeschickt werden.
+function csrf_token(): string {
+  if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
+  }
+  return $_SESSION['csrf'];
+}
+
+function check_csrf(): void {
+  $sent = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+  if (empty($_SESSION['csrf']) || !is_string($sent) || !hash_equals($_SESSION['csrf'], $sent)) {
+    json_response(['error' => 'Sicherheits-Token ungültig. Bitte Seite neu laden.'], 403);
+  }
 }

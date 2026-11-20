@@ -32,6 +32,7 @@ CREATE TABLE users (
   name          VARCHAR(100) NOT NULL,
   email         VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  role          ENUM('kunde', 'admin') NOT NULL DEFAULT 'kunde', -- admin: Datenbankverwaltung (admin.html)
   registered_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id),
   UNIQUE KEY uq_users_email (email),

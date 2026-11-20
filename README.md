@@ -54,8 +54,9 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
 | Online stellen bei InfinityFree: https://tierfutter-shop.great-site.net | ✅ online |
+| Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin_db.php`) | ✅ fertig |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
-| Admin-Rolle, "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
+| "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
 ---
 
@@ -102,7 +103,15 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
      eine ältere Version schon importiert hat, importiert die Datei einfach
      noch einmal: Sie rüstet fehlende Teile nach und übernimmt gespeicherte
      Pläne in die neue Struktur.
+   - **Bestehende Datenbank ohne Admin-Rolle?** Zusätzlich
+     `database/update_admin.sql` importieren. Das Skript ergänzt in `users`
+     die Spalte `role` (alle bisherigen Benutzer sind `kunde`).
 5. **Im Browser öffnen:** `http://localhost/tierfutter-shop/`
+6. **Admin festlegen (optional):** In phpMyAdmin → `tierfutter_shop` →
+   Reiter *SQL* ausführen:
+   `UPDATE users SET role = 'admin' WHERE email = 'deine@email.ch';`
+   Danach im Shop aus- und wieder einloggen. Im Header erscheint der Knopf
+   *Admin*, er öffnet die Datenbankverwaltung (`admin.html`).
 
 ---
 
@@ -144,6 +153,16 @@ schon getrennt vom Code in `includes/config.local.php`.
    Ernährungsplan ausprobieren. Optional unter *Free SSL Certificates* ein
    Zertifikat für `https://` anlegen.
 
+**Update Datenbankverwaltung (Admin):** Auf dem Server diese Dateien neu
+hochladen bzw. ersetzen: `index.html`, `admin.html`, `js/script.js`,
+`js/admin.js`, `css/admin.css`, `api/admin_db.php`, `api/login.php`,
+`api/session.php`, `includes/config.php` (die vorhandene
+`includes/config.local.php` **nicht** überschreiben). In phpMyAdmin der
+Online-Datenbank (Reiter *SQL*) ausführen:
+`ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('kunde', 'admin') NOT NULL DEFAULT 'kunde' AFTER password_hash;`
+und danach das eigene Konto mit `UPDATE users SET role = 'admin' WHERE email = '…';`
+zum Admin machen (ohne `USE`, der Datenbankname ist vorgegeben).
+
 Das lokale Upload-Paket (Ordner `online-upload/`: `htdocs/`, ZIP,
 `datenbank-import.sql`, `ANLEITUNG.md`) ist in `.gitignore` eingetragen,
 weil seine `config.local.php` das echte Passwort enthält.
@@ -170,6 +189,7 @@ grenzt man einen Fehler ein, indem man die API direkt aufruft:
 ```
 tierfutter-shop/
 ├── index.html          Die Shop-Seite
+├── admin.html          Datenbankverwaltung (nur für Admins)
 ├── agb.html            AGB (Mustertext)
 ├── datenschutz.html    Datenschutzerklärung (Mustertext)
 ├── css/                Gestaltung
@@ -195,6 +215,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Aufbau der Seite, Ernährungsplan, Filter, Dialoge für Warenkorb, Login/Registrierung, Bestellformular, Bestellungen und "Meine Pläne" |
+| `admin.html`, `js/admin.js`, `css/admin.css` | Datenbankverwaltung für Admins: Tabellen anzeigen, Zeilen hinzufügen/bearbeiten/löschen, Tabellen erstellen/löschen, Spalten ergänzen/löschen |
 | `agb.html`, `datenschutz.html` | AGB und Datenschutzerklärung (Mustertexte, keine Rechtsberatung) |
 | `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Formulare, Smartphone-Ansicht |
 | `js/script.js` | Produkte laden und anzeigen, Filter, Ernährungsplan und "Meine Pläne", Warenkorb, Login-Ablauf, Bestellen |
@@ -209,6 +230,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `api/orders.php` | Bestellungen des eingeloggten Users |
 | `api/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
 | `api/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
+| `api/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
@@ -217,6 +239,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `database/schema.sql` | Datenbank, alle Tabellen und Produkte (Neuinstallation) |
 | `database/update_orders.sql` | Nur die Bestell- und Newsletter-Tabellen (für eine bestehende Datenbank) |
 | `database/update_ernaehrungsplan.sql` | Nur die Ernährungsplan-Tabellen, gespeicherte Pläne und Diät-Produkte (für eine bestehende Datenbank) |
+| `database/update_admin.sql` | Nur die Spalte `users.role` für die Admin-Rolle (für eine bestehende Datenbank) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
@@ -259,6 +282,7 @@ erDiagram
     varchar name
     varchar email UK
     varchar password_hash
+    enum role
     datetime registered_at
   }
   login_log {
@@ -365,7 +389,7 @@ erDiagram
 
 | Tabelle | Zweck |
 |---|---|
-| `users` | `user_id`, `name`, `email` (UNIQUE), `password_hash`, `registered_at` |
+| `users` | `user_id`, `name`, `email` (UNIQUE), `password_hash`, `role` (`kunde` oder `admin`, Standard `kunde`), `registered_at` |
 | `login_log` | Erfolgreiche Logins: `user_id`, `login_at`, `ip_address` |
 | `products` | `product_id`, `name`, `description`, `price`, `image_path` sowie Filter- und Anzeigedaten: `animal`, `food_type`, `special`, `taste`, `size`, `tag`, `color`, `tint`, `age_min`, `age_max`, `weight_min`, `weight_max` |
 | `carts` | Ein Warenkorb pro User: `cart_id`, `user_id` (UNIQUE), `created_at` |
@@ -438,6 +462,7 @@ sich später der Produktpreis, bleibt die alte Bestellung korrekt.
 | `database/schema.sql` | Datenbank **komplett neu** aufsetzen (anderer PC, Lehrperson, alles zurücksetzen). Enthält alle 14 Tabellen, die Produkte und die Ernährungspläne. **Löscht vorhandene Daten.** | **Ja, unbedingt.** Ohne sie lässt sich die Datenbank nicht neu aufbauen. |
 | `database/update_orders.sql` | Eine **bestehende** Datenbank um `orders`, `order_items` und `newsletter` ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
 | `database/update_ernaehrungsplan.sql` | Eine **bestehende** Datenbank um `conditions`, `plan_steps`, `product_conditions`, `combination_notes`, `saved_plans`, `saved_plan_conditions` und die Diät-Produkte 9 bis 22 ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
+| `database/update_admin.sql` | Eine **bestehende** Datenbank um die Spalte `users.role` ergänzen (Admin-Rolle). Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
 
 Frühere Versionen der Dateien speichert Git, auf GitHub unter *History*.
 
@@ -537,6 +562,19 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
   geprüft und mit Zeitpunkt in `orders` gespeichert (Nachweis).
 - Newsletter nur mit ausdrücklicher Zustimmung (Opt-in), Häkchen nicht vorausgewählt.
 - Technische Fehlermeldungen landen im PHP-Fehlerlog, nicht im Browser
+- **Datenbankverwaltung nur für Admins:** `api/admin_db.php` liest die Rolle bei
+  jeder Anfrage neu aus `users.role` (der Knopf *Admin* im Header ist nur
+  Komfort, der Server entscheidet). Kunden und Gäste erhalten 403 bzw. 401.
+- Jede Änderung in der Datenbankverwaltung braucht zusätzlich ein geheimes
+  CSRF-Token aus der Session (Header `X-CSRF-Token`).
+- Tabellen- und Spaltennamen werden nie ungeprüft ins SQL eingesetzt: Vorhandene
+  Namen werden mit `information_schema` abgeglichen, neue Namen dürfen nur
+  `a–z`, `0–9` und `_` enthalten, Datentypen kommen aus einer festen Liste.
+  Alle Werte gehen über Platzhalter (`?`).
+- Die 14 Tabellen des Shops und ihre Spalten können dort nicht gelöscht
+  werden. Der Passwort-Hash wird nicht angezeigt, neue Benutzer entstehen nur
+  über die Registrierung. Ein Admin kann sich nicht selbst die Rolle
+  wegnehmen oder das eigene Konto löschen (sonst wäre niemand mehr Admin).
 
 ---
 
@@ -553,6 +591,12 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
   - Änderungen in phpMyAdmin stehen nicht in `schema.sql`. Wer sie behalten
     will, trägt sie dort auch ein. Ein neuer Import setzt sonst alle
     Produkte auf den Stand von `schema.sql` zurück.
+- **Im Browser (Admin):** Eingeloggt als Admin im Header *Admin* wählen.
+  Links eine Tabelle anklicken: Zeilen hinzufügen, bearbeiten, löschen;
+  Spalten ergänzen; mit *+ Neue Tabelle* eigene Tabellen anlegen (die Spalte
+  `id` entsteht automatisch). Eigene Tabellen lassen sich wieder löschen,
+  dafür muss man den Namen eintippen. Leeres Feld = `NULL` bzw. Standardwert.
+  Weitere Admins: in `users` bei `role` den Wert `admin` wählen.
 - **Farben:** oben in `css/style.css` unter `:root`
 - **Adresse und E-Mail:** im Footer von `index.html`
 - **Einrückung:** HTML, CSS, JavaScript und PHP mit zwei Leerzeichen.
@@ -577,6 +621,7 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 11. Ernährungsplan: Katze + Übergewicht → Plan mit "Katzen niemals hungern lassen" und dem Produkt "Leicht & Fit" (Katze). Hund + Diabetes → Futter-Zeile nur für Hunde. Ein Produkt aus dem Plan in den Warenkorb legen.
 12. Katze + Chronische Nierenerkrankung + Diabetes wählen → Hinweis "Mehrere Krankheiten" mit Text zu Niere + Diabetes, zwei Abschnitte und ein gemeinsamer Bereich "Empfohlene Produkte".
 13. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
+14. Als Kunde `admin.html` direkt aufrufen: "Kein Zugriff". Als Admin: Knopf *Admin* im Header, Tabelle `lieferanten` mit Spalte `firma` (Text) erstellen, eine Zeile einfügen, bearbeiten, löschen, Tabelle wieder löschen. `products` kann nicht gelöscht werden, die Spalte `price` auch nicht.
 
 ## Entscheidungen im Projektverlauf
 
@@ -598,6 +643,7 @@ aufgebaut ist:
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
 | Bestehende Produkte im Plan | Nur dort zugeordnet, wo sie passen (Senior-Futter bei Gelenkproblemen), für alle Kategorien zusätzlich neue Diät-Produkte | «Getreidefrei» ist z. B. nicht automatisch für Allergiker geeignet |
 | Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
+| Datenbankverwaltung | Eigene Seite `admin.html` mit Rolle `admin` in `users`, Änderungen über feste Aktionen (Zeilen, Tabellen, Spalten) statt freiem SQL-Feld; Shop-Tabellen geschützt | Admins sollen ohne phpMyAdmin arbeiten können. Ein freies SQL-Feld könnte mit einem Tippfehler den ganzen Shop löschen. |
 | Hosting | Kostenlos bei InfinityFree, Upload über den Dateimanager, Datenbank mit angepasster `schema.sql` | Schulprojekt ohne Budget; PHP und MySQL wie lokal, kein Code-Umbau nötig. Auf Shared Hosting ist der Datenbankname vorgegeben, darum ohne `CREATE DATABASE`/`USE`. |
 
 ## Hinweise
