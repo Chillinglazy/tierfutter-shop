@@ -194,6 +194,7 @@ grenzt man einen Fehler ein, indem man die API direkt aufruft:
 | Umlaute kaputt (`Ã¼`) | Import ohne UTF-8 | Import mit `SET NAMES utf8mb4;` wiederholen |
 | Symbole im Ernährungsplan als `?` oder `??` | Datenbank wurde mit Zeichensatz `latin1` angelegt (Standard bei InfinityFree). Die Tabellen bekamen diesen Zeichensatz, Emojis lassen sich darin nicht speichern. **So war es beim zweiten Upload.** | Online-Variante von `database/update_utf8mb4.sql` (ohne `USE`) importieren. Seitdem legt `schema.sql` jede Tabelle ausdrücklich mit `utf8mb4` an. |
 | Produkte als JSON, Seite trotzdem leer | Alte Dateien im Browser-Cache | **Strg + F5** |
+| Neue Knöpfe/Änderungen fehlen nach dem Upload (z. B. *⚙ Admin*) | Browser zeigt die alte `index.html` aus dem Cache | **Strg + F5** oder Inkognito-Fenster. Seit dem 20.11.2026 sagt `.htaccess` dem Browser, HTML-Seiten nicht zwischenzuspeichern. |
 
 ---
 
