@@ -228,9 +228,30 @@ textarea {
 }
 
 .admin-denied {
+  max-width: 420px;
   text-align: center;
-  padding: 80px 32px
+  padding: 60px 16px
 }
+
+.admin-login {
+  text-align: left;
+  margin: 24px 0
+}
+
+.admin-login label {
+  margin-bottom: 15px
+}
+
+.admin-login .btn {
+  width: 100%
+}
+
+#loginMessage {
+  color: #a3352b;
+  font-size: 13px
+}
+
+
 
 @media(max-width:900px) {
   .admin {

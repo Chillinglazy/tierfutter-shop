@@ -22,17 +22,52 @@ async function adminApi(params, data) {
   } catch {
     throw new Error('Server nicht erreichbar. Bitte Seite neu laden.')
   }
-  if (res.status === 401 || res.status === 403 && !data) return denied(json.error);
+  if (res.status === 401) return denied(json.error);
   if (!res.ok) throw new Error(json.error || 'Unbekannter Fehler.');
   return json
 }
 
+// ADMIN-LOGIN: Ohne gültigen Admin-Login (401) erscheint das Login-Formular.
 function denied(text) {
-  $('adminMain').hidden = true;
-  $('denied').hidden = false;
-  $('deniedText').textContent = text === 'Bitte zuerst einloggen.' ? 'Bitte zuerst im Shop mit einem Admin-Konto einloggen.' : 'Dieser Bereich ist nur für Administratoren.';
+  showLogin();
   throw new Error(text)
 }
+
+function showLogin() {
+  $('adminMain').hidden = true;
+  $('logoutAdmin').hidden = true;
+  $('denied').hidden = false;
+  $('adminUser').textContent = '';
+  $('loginEmail').focus()
+}
+
+// Anmelden über api/admin_login.php: prüft Passwort UND Rolle admin.
+$('adminLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('loginMessage').textContent = '';
+  try {
+    const res = await fetch('api/admin_login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('loginEmail').value, password: $('loginPassword').value })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Login fehlgeschlagen.');
+    e.target.reset();
+    $('denied').hidden = true;
+    start()
+  } catch (err) {
+    $('loginMessage').textContent = err.message
+  }
+});
+
+// Admin abmelden: beendet nur den Zugang zur Datenbankverwaltung.
+$('logoutAdmin').addEventListener('click', async () => {
+  try {
+    await fetch('api/admin_login.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
+  } catch {}
+  showLogin()
+});
 
 function toast(text) {
   const t = $('toast');
@@ -241,9 +276,15 @@ async function refresh() {
 }
 
 // START: Zugriff prüfen und Tabellen laden.
-fetch('api/session.php').then(r => r.json()).then(res => {
-  if (res.user) $('adminUser').textContent = 'Admin: ' + res.user.name
-}).catch(() => {});
-loadTables().then(() => $('adminMain').hidden = false).catch(err => {
-  if ($('denied').hidden) toast(err.message)
-})
+function start() {
+  fetch('api/session.php').then(r => r.json()).then(res => {
+    if (res.user?.admin) $('adminUser').textContent = 'Admin: ' + res.user.name
+  }).catch(() => {});
+  loadTables().then(() => {
+    $('adminMain').hidden = false;
+    $('logoutAdmin').hidden = false
+  }).catch(err => {
+    if ($('denied').hidden) toast(err.message)
+  })
+}
+start()

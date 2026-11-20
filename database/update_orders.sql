@@ -4,6 +4,7 @@
 -- Import in phpMyAdmin: Haus-Symbol → Importieren → update_orders.sql auswählen → Importieren.
 -- (Bei einer neuen Installation reicht schema.sql, dort sind die Tabellen schon enthalten.)
 
+SET NAMES utf8mb4;
 USE tierfutter_shop;
 
 -- BESTELLUNGEN: users 1 : N orders
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS orders (
   CONSTRAINT chk_orders_total   CHECK (total >= 0),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE SET NULL
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- BESTELL-POSITIONEN: orders N : M products
 -- Name und Preis werden kopiert, damit alte Bestellungen den Preis vom Bestelltag behalten.
@@ -51,7 +52,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     REFERENCES orders (order_id) ON DELETE CASCADE,
   CONSTRAINT fk_order_items_product FOREIGN KEY (product_id)
     REFERENCES products (product_id) ON DELETE RESTRICT
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- NEWSLETTER: Anmeldungen (auch von Gästen), jede E-Mail nur einmal.
 CREATE TABLE IF NOT EXISTS newsletter (
@@ -61,4 +62,4 @@ CREATE TABLE IF NOT EXISTS newsletter (
   PRIMARY KEY (newsletter_id),
   UNIQUE KEY uq_newsletter_email (email),
   CONSTRAINT chk_newsletter_email CHECK (email LIKE '%_@_%._%')
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
