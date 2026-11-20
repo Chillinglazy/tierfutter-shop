@@ -36,6 +36,7 @@ German-language school project: a small pet-food web shop (Tierfutter-Shop, Barg
 ## Things that must stay in sync
 
 - `orders`, `order_items`, `newsletter` are defined twice: in `database/schema.sql` (full rebuild) and `database/update_orders.sql` (adds them to an existing DB with `CREATE TABLE IF NOT EXISTS`). Change both. Same for `conditions`, `plan_steps`, `product_conditions`, `combination_notes`, `saved_plans`, `saved_plan_conditions` and the diet products 9–22, which are in `schema.sql` and `database/update_ernaehrungsplan.sql` (INSERT IGNORE with fixed ids; new `*.sql` files must be whitelisted in `.gitignore`).
+- SQL scripts must run on MySQL 8 (the user now uses MySQL Community Server + Workbench) as well as MariaDB: no MariaDB-only `ADD COLUMN IF NOT EXISTS` / `DROP ... IF EXISTS` in `ALTER TABLE`; check `information_schema` and run the statement via `PREPARE` (see `update_admin.sql`).
 - `users.role` is in `schema.sql` and `database/update_admin.sql`; `CORE_TABLES` in `api/admin_db.php` must list every table/column of `schema.sql`.
 - `MAX_QUANTITY` (99) in `includes/config.php` matches the `CHECK (quantity BETWEEN 1 AND 99)` constraints; `PAYMENT_METHODS` in `api/order.php` matches `chk_orders_payment`.
 - New publicly reachable files belong in the web folders (`api/`, `css/`, `js/`, `assets/`, root HTML). `includes/` and `database/` have `.htaccess` with `Require all denied`; the root `.htaccess` hides dotfiles (`.git`), `*.md` and the workspace file.

@@ -105,7 +105,9 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
      Pläne in die neue Struktur.
    - **Bestehende Datenbank ohne Admin-Rolle?** Zusätzlich
      `database/update_admin.sql` importieren. Das Skript ergänzt in `users`
-     die Spalte `role` (alle bisherigen Benutzer sind `kunde`).
+     die Spalte `role` (alle bisherigen Benutzer sind `kunde`). Es läuft mit
+     MariaDB (XAMPP) und mit MySQL 8 (z. B. MySQL Workbench, dort das ganze
+     Skript mit dem Blitz-Symbol ausführen).
 5. **Im Browser öffnen:** `http://localhost/tierfutter-shop/`
 6. **Admin festlegen (optional):** In phpMyAdmin → `tierfutter_shop` →
    Reiter *SQL* ausführen:
@@ -158,9 +160,8 @@ hochladen bzw. ersetzen: `index.html`, `admin.html`, `js/script.js`,
 `js/admin.js`, `css/admin.css`, `api/admin_db.php`, `api/login.php`,
 `api/session.php`, `includes/config.php` (die vorhandene
 `includes/config.local.php` **nicht** überschreiben). In phpMyAdmin der
-Online-Datenbank (Reiter *SQL*) ausführen:
-`ALTER TABLE users ADD COLUMN IF NOT EXISTS role ENUM('kunde', 'admin') NOT NULL DEFAULT 'kunde' AFTER password_hash;`
-und danach das eigene Konto mit `UPDATE users SET role = 'admin' WHERE email = '…';`
+Online-Datenbank (Reiter *SQL*) den Inhalt von `database/update_admin.sql`
+**ohne** die Zeile `USE tierfutter_shop;` ausführen und danach das eigene Konto mit `UPDATE users SET role = 'admin' WHERE email = '…';`
 zum Admin machen (ohne `USE`, der Datenbankname ist vorgegeben).
 
 Das lokale Upload-Paket (Ordner `online-upload/`: `htdocs/`, ZIP,
@@ -462,7 +463,7 @@ sich später der Produktpreis, bleibt die alte Bestellung korrekt.
 | `database/schema.sql` | Datenbank **komplett neu** aufsetzen (anderer PC, Lehrperson, alles zurücksetzen). Enthält alle 14 Tabellen, die Produkte und die Ernährungspläne. **Löscht vorhandene Daten.** | **Ja, unbedingt.** Ohne sie lässt sich die Datenbank nicht neu aufbauen. |
 | `database/update_orders.sql` | Eine **bestehende** Datenbank um `orders`, `order_items` und `newsletter` ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
 | `database/update_ernaehrungsplan.sql` | Eine **bestehende** Datenbank um `conditions`, `plan_steps`, `product_conditions`, `combination_notes`, `saved_plans`, `saved_plan_conditions` und die Diät-Produkte 9 bis 22 ergänzen. Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
-| `database/update_admin.sql` | Eine **bestehende** Datenbank um die Spalte `users.role` ergänzen (Admin-Rolle). Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. | Nur einmal pro Datenbank nötig, darf aber bleiben. |
+| `database/update_admin.sql` | Eine **bestehende** Datenbank um die Spalte `users.role` ergänzen (Admin-Rolle). Andere Daten bleiben erhalten. Zweimal importieren schadet nicht. Läuft mit MariaDB und MySQL 8 (prüft die Spalte über `information_schema`, weil MySQL `ADD COLUMN IF NOT EXISTS` nicht kennt). | Nur einmal pro Datenbank nötig, darf aber bleiben. |
 
 Frühere Versionen der Dateien speichert Git, auf GitHub unter *History*.
 
