@@ -2,6 +2,9 @@
 -- Import in phpMyAdmin: Haus-Symbol → Importieren → schema.sql auswählen → Importieren.
 -- ACHTUNG: Vorhandene Tabellen mit denselben Namen werden gelöscht.
 
+-- Zeichensatz der Verbindung: utf8mb4, sonst werden Symbole (Emojis) zu "?".
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS tierfutter_shop
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
@@ -38,7 +41,7 @@ CREATE TABLE users (
   UNIQUE KEY uq_users_email (email),
   CONSTRAINT chk_users_email CHECK (email LIKE '%_@_%._%'),
   CONSTRAINT chk_users_name  CHECK (CHAR_LENGTH(TRIM(name)) > 0)
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- LOGIN-PROTOKOLL: users 1 : N login_log
 CREATE TABLE login_log (
@@ -50,7 +53,7 @@ CREATE TABLE login_log (
   KEY idx_login_log_user (user_id),
   CONSTRAINT fk_login_log_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- PRODUKTE: Einzige Quelle für die Website (products.php liefert sie an script.js).
 -- animal, food_type, special und taste müssen genau wie die Auswahl
@@ -79,7 +82,7 @@ CREATE TABLE products (
   CONSTRAINT chk_products_tint   CHECK (tint REGEXP '^#[0-9a-fA-F]{6}$'),
   CONSTRAINT chk_products_age    CHECK (age_min >= 0 AND age_min <= age_max),
   CONSTRAINT chk_products_weight CHECK (weight_min >= 0 AND weight_min <= weight_max)
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- WARENKORB: users 1 : 1 carts (UNIQUE auf user_id)
 CREATE TABLE carts (
@@ -90,7 +93,7 @@ CREATE TABLE carts (
   UNIQUE KEY uq_carts_user (user_id),
   CONSTRAINT fk_carts_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- WARENKORB-POSITIONEN: carts N : M products
 -- Jedes Produkt nur einmal pro Warenkorb, die Menge steht in quantity.
@@ -105,7 +108,7 @@ CREATE TABLE cart_items (
     REFERENCES carts (cart_id) ON DELETE CASCADE,
   CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id)
     REFERENCES products (product_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- BESTELLUNGEN: users 1 : N orders
 -- user_id ist NULL bei Gastbestellungen.
@@ -133,7 +136,7 @@ CREATE TABLE orders (
   CONSTRAINT chk_orders_total   CHECK (total >= 0),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE SET NULL
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- BESTELL-POSITIONEN: orders N : M products
 -- Name und Preis werden kopiert, damit alte Bestellungen den Preis vom Bestelltag behalten.
@@ -152,7 +155,7 @@ CREATE TABLE order_items (
     REFERENCES orders (order_id) ON DELETE CASCADE,
   CONSTRAINT fk_order_items_product FOREIGN KEY (product_id)
     REFERENCES products (product_id) ON DELETE RESTRICT
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- NEWSLETTER: Anmeldungen (auch von Gästen), jede E-Mail nur einmal.
 CREATE TABLE newsletter (
@@ -162,7 +165,7 @@ CREATE TABLE newsletter (
   PRIMARY KEY (newsletter_id),
   UNIQUE KEY uq_newsletter_email (email),
   CONSTRAINT chk_newsletter_email CHECK (email LIKE '%_@_%._%')
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- PRODUKTE: Neue Produkte hier oder direkt in phpMyAdmin eintragen. ID 4 gibt es nicht.
 INSERT INTO products
@@ -189,7 +192,7 @@ CREATE TABLE conditions (
   sort_order   INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (condition_id),
   UNIQUE KEY uq_conditions_name (name)
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- PLAN-SCHRITTE: conditions 1 : N plan_steps
 -- animal NULL = gilt für Hund und Katze, sonst nur für dieses Tier.
@@ -205,7 +208,7 @@ CREATE TABLE plan_steps (
   CONSTRAINT chk_plan_steps_animal CHECK (animal IS NULL OR animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_plan_steps_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- PASSENDE PRODUKTE: products N : M conditions
 CREATE TABLE product_conditions (
@@ -217,7 +220,7 @@ CREATE TABLE product_conditions (
     REFERENCES products (product_id) ON DELETE CASCADE,
   CONSTRAINT fk_product_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- KOMBINATIONEN: Hinweise, wenn zwei Krankheiten zusammen gewählt werden
 -- (conditions N : M conditions). condition_a ist immer die kleinere ID.
@@ -232,7 +235,7 @@ CREATE TABLE combination_notes (
     REFERENCES conditions (condition_id) ON DELETE CASCADE,
   CONSTRAINT fk_combination_notes_b FOREIGN KEY (condition_b)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- GESPEICHERTE PLÄNE: users 1 : N saved_plans
 -- Eingeloggte Kunden speichern ihre erstellten Pläne ("Meine Pläne").
@@ -248,7 +251,7 @@ CREATE TABLE saved_plans (
   CONSTRAINT chk_saved_plans_animal CHECK (animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_saved_plans_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- KRANKHEITEN EINES GESPEICHERTEN PLANS: saved_plans N : M conditions
 -- Ein Tier kann mehrere Krankheiten haben.
@@ -261,7 +264,7 @@ CREATE TABLE saved_plan_conditions (
     REFERENCES saved_plans (plan_id) ON DELETE CASCADE,
   CONSTRAINT fk_saved_plan_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- DIÄT-PRODUKTE: gleiches Format wie die übrigen Produkte, special = 'Diät'.
 INSERT INTO products

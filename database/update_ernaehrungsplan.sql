@@ -8,6 +8,7 @@
 -- Zweimal importieren schadet nicht (vorhandene Zeilen werden übersprungen).
 -- (Bei einer neuen Installation reicht schema.sql, dort ist alles schon enthalten.)
 
+SET NAMES utf8mb4;
 USE tierfutter_shop;
 
 -- KRANKHEITEN / KATEGORIEN für den Ernährungsplan
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS conditions (
   sort_order   INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (condition_id),
   UNIQUE KEY uq_conditions_name (name)
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Erste Version dieses Updates hatte noch kein Symbol: Spalte nachrüsten.
 ALTER TABLE conditions ADD COLUMN IF NOT EXISTS icon VARCHAR(8) NOT NULL DEFAULT '' AFTER name;
@@ -38,7 +39,7 @@ CREATE TABLE IF NOT EXISTS plan_steps (
   CONSTRAINT chk_plan_steps_animal CHECK (animal IS NULL OR animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_plan_steps_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- PASSENDE PRODUKTE: products N : M conditions
 CREATE TABLE IF NOT EXISTS product_conditions (
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS product_conditions (
     REFERENCES products (product_id) ON DELETE CASCADE,
   CONSTRAINT fk_product_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- KOMBINATIONEN: Hinweise, wenn zwei Krankheiten zusammen gewählt werden
 -- (conditions N : M conditions). condition_a ist immer die kleinere ID.
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS combination_notes (
     REFERENCES conditions (condition_id) ON DELETE CASCADE,
   CONSTRAINT fk_combination_notes_b FOREIGN KEY (condition_b)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- GESPEICHERTE PLÄNE: users 1 : N saved_plans
 -- Eingeloggte Kunden speichern ihre erstellten Pläne ("Meine Pläne").
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS saved_plans (
   CONSTRAINT chk_saved_plans_animal CHECK (animal IN ('Hund', 'Katze')),
   CONSTRAINT fk_saved_plans_user FOREIGN KEY (user_id)
     REFERENCES users (user_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- KRANKHEITEN EINES GESPEICHERTEN PLANS: saved_plans N : M conditions
 -- Ein Tier kann mehrere Krankheiten haben.
@@ -94,7 +95,7 @@ CREATE TABLE IF NOT EXISTS saved_plan_conditions (
     REFERENCES saved_plans (plan_id) ON DELETE CASCADE,
   CONSTRAINT fk_saved_plan_conditions_condition FOREIGN KEY (condition_id)
     REFERENCES conditions (condition_id) ON DELETE CASCADE
-) ENGINE = InnoDB;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Ältere Version: saved_plans hatte eine Spalte condition_id (nur 1 Krankheit).
 -- Vorhandene Pläne nach saved_plan_conditions kopieren, dann die Spalte entfernen.

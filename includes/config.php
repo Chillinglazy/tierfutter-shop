@@ -92,10 +92,16 @@ function user_is_admin(PDO $pdo, int $userId): bool {
   }
 }
 
+// Zugang nur nach dem Admin-Login auf admin.html (api/admin_login.php setzt admin_ok)
+// und nur, solange das Konto in der Datenbank noch die Rolle admin hat.
 function require_admin(PDO $pdo): int {
-  $userId = require_login();
+  if (empty($_SESSION['user_id']) || empty($_SESSION['admin_ok'])) {
+    json_response(['error' => 'Admin-Login erforderlich.'], 401);
+  }
+  $userId = (int) $_SESSION['user_id'];
   if (!user_is_admin($pdo, $userId)) {
-    json_response(['error' => 'Nur für Administratoren.'], 403);
+    unset($_SESSION['admin_ok']);
+    json_response(['error' => 'Nur für Administratoren.'], 401);
   }
   return $userId;
 }

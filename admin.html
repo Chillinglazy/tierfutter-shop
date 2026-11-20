@@ -8,8 +8,8 @@
    Datenbankverwaltung · Tierfutter-Shop
   </title>
   <link href="css/style.css?v=6" rel="stylesheet"/>
-  <link href="css/admin.css?v=1" rel="stylesheet"/>
-  <script defer="" src="js/admin.js?v=1">
+  <link href="css/admin.css?v=2" rel="stylesheet"/>
+  <script defer="" src="js/admin.js?v=2">
   </script>
  </head>
  <body>
@@ -29,22 +29,39 @@
    <div class="actions">
     <span class="user-info" id="adminUser">
     </span>
+    <button class="btn" hidden="" id="logoutAdmin" type="button">
+     Admin abmelden
+    </button>
     <a class="btn" href="index.html">
      ← Zurück zum Shop
     </a>
    </div>
   </header>
 
-  <!-- KEIN ZUGRIFF: wird angezeigt, wenn der Server 401/403 meldet -->
+  <!-- ADMIN-LOGIN: erscheint, solange kein gültiger Admin-Login besteht -->
   <main class="admin-denied" hidden="" id="denied">
    <h1>
-    Kein Zugriff
+    🔒 Admin-Login
    </h1>
-   <p id="deniedText">
+   <p>
+    Die Datenbankverwaltung ist nur für Administratoren. Bitte mit E-Mail und
+    Passwort eines Admin-Kontos anmelden.
    </p>
-   <a class="btn solid" href="index.html">
-    Zum Shop und einloggen
-   </a>
+   <form class="admin-login" id="adminLogin">
+    <label>
+     E-Mail
+     <input autocomplete="email" id="loginEmail" maxlength="255" required="" type="email"/>
+    </label>
+    <label>
+     Passwort
+     <input autocomplete="current-password" id="loginPassword" maxlength="72" required="" type="password"/>
+    </label>
+    <button class="btn solid" type="submit">
+     Als Admin einloggen
+    </button>
+    <p id="loginMessage" role="status">
+    </p>
+   </form>
   </main>
 
   <main class="admin" hidden="" id="adminMain">
