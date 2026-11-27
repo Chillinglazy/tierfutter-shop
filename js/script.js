@@ -14,7 +14,7 @@ const money = n => 'CHF ' + n.toFixed(2);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ids = ['animal', 'type', 'special', 'taste', 'weight', 'age'];
 
-// SERVER: PHP-Datei im Ordner api/ aufrufen, z. B. api('cart.php'). Mit data als POST (JSON), sonst GET.
+// SERVER: PHP-Datei im Ordner api/ aufrufen, z. B. api('shop/cart.php'). Mit data als POST (JSON), sonst GET.
 async function api(file, data) {
   let res, json;
   try {
@@ -94,7 +94,7 @@ function toast(text) {
 
 // Eingeloggt: Änderung an cart.php senden, Antwort ist der neue Warenkorb.
 function cartRequest(data) {
-  cartQueue = cartQueue.catch(() => {}).then(() => api('cart.php', data)).then(res => {
+  cartQueue = cartQueue.catch(() => {}).then(() => api('shop/cart.php', data)).then(res => {
     basket = res.items;
     save();
     if (document.getElementById('cart').open) renderCart()
@@ -172,7 +172,7 @@ document.getElementById('authForm').addEventListener('submit', async e => {
   if (reg) data.name = document.getElementById('name').value;
   button.disabled = true;
   try {
-    const res = await api(reg ? 'register.php' : 'login.php', data);
+    const res = await api(reg ? 'konto/register.php' : 'konto/login.php', data);
     await loggedIn(res.user, true);
     document.getElementById('auth').close();
     toast('♡ Hallo ' + res.user.name + '!')
@@ -188,7 +188,7 @@ async function loggedIn(user, mergeGuestCart) {
   currentUser = user;
   showUser();
   const guest = mergeGuestCart ? basket : {};
-  basket = (Object.keys(guest).length ? await api('cart.php', { action: 'merge', items: guest }) : await api('cart.php')).items;
+  basket = (Object.keys(guest).length ? await api('shop/cart.php', { action: 'merge', items: guest }) : await api('shop/cart.php')).items;
   try {
     localStorage.removeItem('tierfutter-cart')
   } catch {}
@@ -198,7 +198,7 @@ async function loggedIn(user, mergeGuestCart) {
 
 async function logout() {
   try {
-    await api('logout.php', {})
+    await api('konto/logout.php', {})
   } catch (err) {
     return toast(err.message)
   }
@@ -267,7 +267,7 @@ document.getElementById('checkoutForm').addEventListener('submit', async e => {
   };
   button.disabled = true;
   try {
-    const res = await api('order.php', data);
+    const res = await api('shop/order.php', data);
     basket = {};
     save();
     e.target.hidden = true;
@@ -286,7 +286,7 @@ async function openOrders() {
   list.textContent = 'Wird geladen …';
   document.getElementById('orders').showModal();
   try {
-    const { orders } = await api('orders.php');
+    const { orders } = await api('shop/orders.php');
     list.innerHTML = orders.length ? orders.map(o => `<div class="order">
       <div class="order-head"><strong>Nr. ${o.order_id}</strong><span>${new Date(o.ordered_at.replace(' ', 'T')).toLocaleString('de-CH', { dateStyle: 'medium', timeStyle: 'short' })}</span></div>
       ${o.items.map(i => `<div class="order-line"><span>${i.quantity} × ${esc(i.product_name)}</span><span>${money(i.unit_price * i.quantity)}</span></div>`).join('')}
@@ -304,7 +304,7 @@ let shownPlan = null; // {condition_ids, animal, pet_name} des angezeigten Plans
 async function loadConditions() {
   const box = document.getElementById('planConditions');
   try {
-    const { conditions } = await api('diet_plan.php');
+    const { conditions } = await api('ernaehrungsplan/diet_plan.php');
     box.innerHTML = conditions.map(c => `<label class="choice">
       <input name="planCondition" type="checkbox" value="${c.condition_id}">
       <span><b class="choice-icon">${esc(c.icon)}</b><strong>${esc(c.name)}</strong><small>${esc(c.goal)}</small><em class="choice-check">✓ gewählt</em></span>
@@ -347,7 +347,7 @@ async function showPlan(ids, animal, pet) {
   const message = document.getElementById('planMessage');
   message.textContent = '';
   try {
-    const { plan } = await api('diet_plan.php?condition_ids=' + encodeURIComponent(ids.join(',')) + '&animal=' + encodeURIComponent(animal));
+    const { plan } = await api('ernaehrungsplan/diet_plan.php?condition_ids=' + encodeURIComponent(ids.join(',')) + '&animal=' + encodeURIComponent(animal));
     shownPlan = { condition_ids: plan.conditions.map(c => c.condition_id), animal: plan.animal, pet_name: pet };
     const several = plan.conditions.length > 1;
     const title = plan.conditions.map(c => esc(c.name)).join(' + ');
@@ -400,7 +400,7 @@ function updatePlanSave() {
 async function savePlan() {
   if (!currentUser) return openAuth('login');
   try {
-    await api('saved_plans.php', { action: 'save', ...shownPlan });
+    await api('ernaehrungsplan/saved_plans.php', { action: 'save', ...shownPlan });
     toast('♡ Plan unter "Meine Pläne" gespeichert')
   } catch (err) {
     toast(err.message)
@@ -415,7 +415,7 @@ async function openPlans(data) {
     document.getElementById('plans').showModal()
   }
   try {
-    const { plans } = await api('saved_plans.php', data);
+    const { plans } = await api('ernaehrungsplan/saved_plans.php', data);
     list.innerHTML = plans.length ? plans.map(p => `<div class="order saved-plan">
       <span class="plan-icon small">${p.conditions.length > 1 ? '🩺' : esc(p.conditions[0].icon)}</span>
       <div><strong>${p.pet_name ? esc(p.pet_name) + ' · ' : ''}${p.conditions.map(c => esc(c.name)).join(' + ')}</strong><br>
@@ -448,7 +448,7 @@ document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e =
 // START: Produkte laden, dann prüfen, ob noch eine Session besteht.
 async function loadProducts() {
   try {
-    products = (await api('products.php')).products;
+    products = (await api('shop/products.php')).products;
     // Gast-Warenkorb: Produkte entfernen, die es nicht mehr gibt.
     Object.keys(basket).forEach(id => products.some(p => p.product_id === +id) || delete basket[id]);
     render()
@@ -460,7 +460,7 @@ async function loadProducts() {
 }
 save();
 loadConditions();
-loadProducts().then(() => api('session.php')).then(res => res.user && loggedIn(res.user, false)).catch(() => {
+loadProducts().then(() => api('konto/session.php')).then(res => res.user && loggedIn(res.user, false)).catch(() => {
   // z. B. User in der Datenbank gelöscht: wieder als Gast anzeigen.
   currentUser = null;
   showUser()

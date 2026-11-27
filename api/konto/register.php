@@ -1,6 +1,6 @@
 <?php
 // REGISTRIERUNG: User und Warenkorb anlegen, danach direkt einloggen.
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 $data = read_json_post();
 $name = trim((string) ($data['name'] ?? ''));
@@ -20,22 +20,27 @@ if (strlen($password) < 8 || strlen($password) > 72) {
 }
 
 // E-MAIL AUF DUPLIKAT PRÜFEN
-$stmt = $pdo->prepare('SELECT 1 FROM users WHERE email = ?');
-$stmt->execute([$email]);
-if ($stmt->fetch()) {
+if (find_user($pdo, $email)) {
   json_response(['error' => 'Diese E-Mail-Adresse ist bereits registriert.'], 409);
 }
 
 // USER UND WARENKORB ZUSAMMEN ANLEGEN (alles oder nichts)
-$pdo->beginTransaction();
 try {
-  $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)')
-    ->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
-  $userId = (int) $pdo->lastInsertId();
-  $pdo->prepare('INSERT INTO carts (user_id) VALUES (?)')->execute([$userId]);
-  $pdo->commit();
+  $hash = password_hash($password, PASSWORD_DEFAULT);
+  if (USE_PROCEDURES) {
+    // Die Prozedur hat ihre eigene Transaktion
+    db_call($pdo, 'sp_benutzer_registrieren(?, ?, ?, @user_id)', [$name, $email, $hash]);
+    $userId = (int) db_var($pdo, '@user_id');
+  } else {
+    $pdo->beginTransaction();
+    $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)')
+      ->execute([$name, $email, $hash]);
+    $userId = (int) $pdo->lastInsertId();
+    $pdo->prepare('INSERT INTO carts (user_id) VALUES (?)')->execute([$userId]);
+    $pdo->commit();
+  }
 } catch (PDOException $e) {
-  $pdo->rollBack();
+  if ($pdo->inTransaction()) $pdo->rollBack();
   // 23000: UNIQUE verletzt, falls zwei Registrierungen gleichzeitig kamen.
   if ($e->getCode() === '23000') {
     json_response(['error' => 'Diese E-Mail-Adresse ist bereits registriert.'], 409);

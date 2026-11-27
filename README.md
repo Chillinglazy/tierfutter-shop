@@ -43,7 +43,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | Bereich | Stand |
 |---|---|
 | Landingpage mit Produktfilter (`index.html`, `css/style.css`, `js/script.js`) | ✅ fertig |
-| Produkte aus der Datenbank (`api/products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
+| Produkte aus der Datenbank (`api/shop/products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
 | Datenbankschema mit echten Produkten (`database/schema.sql`) | ✅ fertig, in MariaDB 10.4 (XAMPP) getestet |
 | Registrierung (Name, E-Mail, Passwort) | ✅ fertig |
 | Login / Logout mit Session und Login-Protokoll | ✅ fertig |
@@ -53,14 +53,14 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | Bestellung mit Kontaktdaten, Lieferadresse und Zahlungsart (auch als Gast) | ✅ fertig |
 | Pflicht-Zustimmung zu AGB und Datenschutz, Newsletter freiwillig | ✅ fertig |
 | "Meine Bestellungen" für eingeloggte User | ✅ fertig |
-| Ernährungsplan für 7 Krankheiten/Kategorien mit passenden Produkten (`api/diet_plan.php`) | ✅ fertig |
+| Ernährungsplan für 7 Krankheiten/Kategorien mit passenden Produkten (`api/ernaehrungsplan/diet_plan.php`) | ✅ fertig |
 | 14 Diät-Produkte (Hund und Katze) für den Ernährungsplan | ✅ fertig |
 | Ernährungsplan oben auf der Startseite, Auswahl mit Kacheln, Knopf im Hero-Bereich | ✅ fertig |
-| "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/saved_plans.php`) | ✅ fertig |
+| "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/ernaehrungsplan/saved_plans.php`) | ✅ fertig |
 | Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
 | Online stellen bei InfinityFree: https://tierfutter-shop.great-site.net | ✅ online |
-| Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin_db.php`), Knopf *⚙ Admin* im Header mit eigenem Admin-Login | ✅ fertig |
+| Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin/admin_db.php`), Knopf *⚙ Admin* im Header mit eigenem Admin-Login | ✅ fertig |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
@@ -133,7 +133,7 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 InfinityFree, PHP 8 und MySQL/MariaDB).
 
 Der Code musste dafür kaum geändert werden: Alle Pfade sind relativ
-(`api/products.php`), der Shop läuft deshalb im Hauptordner (`htdocs/`)
+(`api/shop/products.php`), der Shop läuft deshalb im Hauptordner (`htdocs/`)
 genauso wie lokal im Unterordner `tierfutter-shop/`. Die Zugangsdaten stehen
 schon getrennt vom Code in `includes/config.local.php`.
 
@@ -167,8 +167,8 @@ schon getrennt vom Code in `includes/config.local.php`.
 
 **Update Datenbankverwaltung (Admin):** Auf dem Server diese Dateien neu
 hochladen bzw. ersetzen: `index.html`, `admin.html`, `js/script.js`,
-`js/admin.js`, `css/admin.css`, `api/admin_db.php`, `api/admin_login.php`,
-`api/login.php`, `api/session.php`, `includes/config.php` (die vorhandene
+`js/admin.js`, `css/admin.css`, `api/admin/admin_db.php`, `api/admin/admin_login.php`,
+`api/konto/login.php`, `api/konto/session.php`, `includes/config.php` (die vorhandene
 `includes/config.local.php` **nicht** überschreiben, sonst ist das
 Datenbank-Passwort weg). In phpMyAdmin der
 Online-Datenbank (Reiter *SQL*) den Inhalt von `database/update_admin.sql`
@@ -179,11 +179,39 @@ Das lokale Upload-Paket (Ordner `online-upload/`: `htdocs/`, ZIP,
 `datenbank-import.sql`, `ANLEITUNG.md`) ist in `.gitignore` eingetragen,
 weil seine `config.local.php` das echte Passwort enthält.
 
+## Online stellen mit Stored Procedures (alwaysdata)
+
+InfinityFree erlaubt keine Stored Procedures. Bei **alwaysdata** (Gratis-Plan
+„Free“: 1 GB Speicher, ohne Werbung, PHP und MariaDB) darf man eigene
+Prozeduren anlegen. Dort ruft die Website die Abläufe mit `CALL` auf.
+
+**Schalter statt zweiter Code-Version:** In `includes/config.local.php` steht
+`const DB_PROCEDURES = true;`. Dann rufen die PHP-Dateien die Prozeduren aus
+`database/procedures.sql` auf (`db_call()` in `includes/config.php`). Fehlt die
+Zeile (wie auf InfinityFree) oder steht `false`, arbeiten dieselben Dateien wie
+bisher mit Prepared Statements. So bleibt die InfinityFree-Seite unverändert
+lauffähig, und beide Anbieter bekommen exakt denselben Code.
+Nur `api/admin/admin_db.php` (Datenbankverwaltung) arbeitet immer mit normalem
+SQL, weil Tabellen und Spalten dort erst zur Laufzeit feststehen.
+
+Ablauf in Kurzform (ausführlich in `ANLEITUNG.md` im Upload-Paket
+`online-upload-alwaysdata/`):
+
+1. Konto auf alwaysdata.com (Plan *Free*), Website `<konto>.alwaysdata.net`.
+2. Im Panel *Datenbanken → MySQL* eine Datenbank `<konto>_shop` anlegen.
+3. In phpMyAdmin (https://phpmyadmin.alwaysdata.com) die Datenbank wählen und
+   nacheinander importieren: `1_datenbank-import.sql` (= `schema.sql` ohne
+   `CREATE DATABASE`/`USE`), dann `2_procedures-online.sql` (=
+   `procedures.sql` ohne den festen Datenbanknamen `tierfutter_shop.`).
+4. Dateien per FTP (FileZilla) in den Ordner `www/` hochladen.
+5. `www/includes/config.local.php` mit Host `mysql-<konto>.alwaysdata.net`,
+   Datenbank, Benutzer, Passwort und `DB_PROCEDURES = true` hochladen.
+
 ### Fehlersuche
 
 Der Shop zeigt Fehlerdetails absichtlich nicht im Browser. Am schnellsten
 grenzt man einen Fehler ein, indem man die API direkt aufruft:
-`https://tierfutter-shop.great-site.net/api/products.php`.
+`https://tierfutter-shop.great-site.net/api/shop/products.php`.
 
 | Anzeige | Ursache | Lösung |
 |---|---|---|
@@ -193,6 +221,7 @@ grenzt man einen Fehler ein, indem man die API direkt aufruft:
 | `{"products":[]}` | Import in eine andere Datenbank | Richtige Datenbank anklicken, Import wiederholen |
 | Umlaute kaputt (`Ã¼`) | Import ohne UTF-8 | Import mit `SET NAMES utf8mb4;` wiederholen |
 | Symbole im Ernährungsplan als `?` oder `??` | Datenbank wurde mit Zeichensatz `latin1` angelegt (Standard bei InfinityFree). Die Tabellen bekamen diesen Zeichensatz, Emojis lassen sich darin nicht speichern. **So war es beim zweiten Upload.** | Online-Variante von `database/update_utf8mb4.sql` (ohne `USE`) importieren. Seitdem legt `schema.sql` jede Tabelle ausdrücklich mit `utf8mb4` an. |
+| alwaysdata: `Serverfehler`, obwohl die Zugangsdaten stimmen | `2_procedures-online.sql` fehlt (PROCEDURE … does not exist) | `2_procedures-online.sql` in die richtige Datenbank importieren oder vorübergehend `DB_PROCEDURES = false` setzen |
 | Produkte als JSON, Seite trotzdem leer | Alte Dateien im Browser-Cache | **Strg + F5** |
 | Neue Knöpfe/Änderungen fehlen nach dem Upload (z. B. *⚙ Admin*) | Browser zeigt die alte `index.html` aus dem Cache | **Strg + F5** oder Inkognito-Fenster. Seit dem 20.11.2026 sagt `.htaccess` dem Browser, HTML-Seiten nicht zwischenzuspeichern. |
 
@@ -210,6 +239,10 @@ tierfutter-shop/
 ├── js/                 Verhalten im Browser
 ├── assets/             Bilder
 ├── api/                PHP-Dateien, die script.js per fetch aufruft
+│   ├── konto/          Registrieren, Login, Logout, Session
+│   ├── shop/           Produkte, Warenkorb, Bestellen, Meine Bestellungen
+│   ├── ernaehrungsplan/ Ernährungsplan und gespeicherte Pläne
+│   └── admin/          Admin-Login und Datenbankverwaltung
 ├── includes/           PHP-Dateien, die nur eingebunden werden (gesperrt)
 ├── database/           SQL-Skripte für phpMyAdmin (gesperrt)
 ├── README.md           Projektdokumentation (gesperrt)
@@ -234,18 +267,18 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Formulare, Smartphone-Ansicht |
 | `js/script.js` | Produkte laden und anzeigen, Filter, Ernährungsplan und "Meine Pläne", Warenkorb, Login-Ablauf, Bestellen |
 | `assets/logo.png` | Shop-Logo |
-| `api/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
-| `api/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
-| `api/login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
-| `api/logout.php` | Session beenden |
-| `api/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
-| `api/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
-| `api/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
-| `api/orders.php` | Bestellungen des eingeloggten Users |
-| `api/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
-| `api/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
-| `api/admin_login.php` | Admin-Login für die Datenbankverwaltung: prüft Passwort und Rolle `admin`, setzt den Admin-Zugang in der Session; `logout` beendet ihn |
-| `api/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
+| `api/shop/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
+| `api/konto/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
+| `api/konto/login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
+| `api/konto/logout.php` | Session beenden |
+| `api/konto/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
+| `api/shop/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
+| `api/shop/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
+| `api/shop/orders.php` | Bestellungen des eingeloggten Users |
+| `api/ernaehrungsplan/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
+| `api/ernaehrungsplan/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
+| `api/admin/admin_login.php` | Admin-Login für die Datenbankverwaltung: prüft Passwort und Rolle `admin`, setzt den Admin-Zugang in der Session; `logout` beendet ihn |
+| `api/admin/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
@@ -256,11 +289,15 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `database/update_ernaehrungsplan.sql` | Nur die Ernährungsplan-Tabellen, gespeicherte Pläne und Diät-Produkte (für eine bestehende Datenbank) |
 | `database/update_admin.sql` | Nur die Spalte `users.role` für die Admin-Rolle (für eine bestehende Datenbank) |
 | `database/update_utf8mb4.sql` | Stellt alle Tabellen auf `utf8mb4` um und trägt die Symbole der Krankheiten neu ein (wenn sie als `?` erscheinen) |
+| `database/procedures.sql` | 24 Stored Procedures (Produkte, Registrieren, Login, Warenkorb, Bestellen auch als Gast, Meine Bestellungen, Ernährungsplan, Meine Pläne, Umsatz pro Produkt); in Workbench zum Ausprobieren, bei alwaysdata ruft die Website sie auf (`DB_PROCEDURES = true`) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
 Alle PHP-Dateien in `api/` antworten mit JSON und werden von `js/script.js`
-über die Funktion `api()` per `fetch` aufgerufen. Es gibt keine eigenen
+über die Funktion `api()` per `fetch` aufgerufen (z. B. `api('shop/cart.php')`).
+Sie sind nach Thema in Unterordner sortiert: `konto/`, `shop/`,
+`ernaehrungsplan/` und `admin/`. Jede Datei bindet zuerst
+`includes/config.php` ein (`require __DIR__ . '/../../includes/config.php'`). Es gibt keine eigenen
 PHP-Seiten, die Seite bleibt `index.html`.
 
 ---
@@ -542,11 +579,11 @@ steht immer sichtbar über dem Formular und unter jedem Plan.
 **Meine Bestellungen:** Eingeloggte User sehen im Header den Knopf
 "Bestellungen" mit allen früheren Bestellungen (`orders.php`).
 
-### Warenkorb-API (`api/cart.php`)
+### Warenkorb-API (`api/shop/cart.php`)
 
 | Anfrage | Wirkung |
 |---|---|
-| `GET api/cart.php` | Warenkorb laden |
+| `GET api/shop/cart.php` | Warenkorb laden |
 | `POST {"action":"add","product_id":1,"quantity":1}` | Hinzufügen (`quantity` optional) |
 | `POST {"action":"change","product_id":1,"delta":-1}` | Menge ändern, bei 0 entfernen |
 | `POST {"action":"remove","product_id":1}` | Entfernen |
@@ -580,9 +617,9 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 - Newsletter nur mit ausdrücklicher Zustimmung (Opt-in), Häkchen nicht vorausgewählt.
 - Technische Fehlermeldungen landen im PHP-Fehlerlog, nicht im Browser
 - **Datenbankverwaltung nur für Admins:** Der Knopf *⚙ Admin* ist für alle
-  sichtbar, führt aber zuerst zum Admin-Login (`api/admin_login.php`). Der
+  sichtbar, führt aber zuerst zum Admin-Login (`api/admin/admin_login.php`). Der
   prüft Passwort **und** Rolle `admin` und setzt erst dann den Admin-Zugang in
-  der Session. Ein normaler Shop-Login reicht nicht. `api/admin_db.php` prüft bei
+  der Session. Ein normaler Shop-Login reicht nicht. `api/admin/admin_db.php` prüft bei
   jeder Anfrage den Admin-Zugang und liest die Rolle neu aus `users.role`
   (wird jemandem die Rolle entzogen, ist der Zugang sofort weg).
   *Admin abmelden* beendet nur den Admin-Zugang, Logout im Shop beides.
@@ -645,6 +682,60 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 13. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
 14. Knopf *⚙ Admin*: Admin-Login erscheint (auch wenn man im Shop schon eingeloggt ist). Mit Kundenkonto: "Dieses Konto hat keine Admin-Rechte." Mit Admin-Konto: Tabelle `lieferanten` mit Spalte `firma` (Text) erstellen, eine Zeile einfügen, bearbeiten, löschen, Tabelle wieder löschen. `products` kann nicht gelöscht werden, die Spalte `price` auch nicht.
 
+## Stored Procedures
+
+`database/procedures.sql` legt 24 gespeicherte Prozeduren an. Sie machen
+dasselbe wie die PHP-Dateien, laufen aber direkt in der Datenbank. Die ersten
+10 sind die wichtigsten Abläufe zum Zeigen, die weiteren 14 braucht die
+Website zusätzlich, wenn sie mit `DB_PROCEDURES = true` läuft (alwaysdata).
+MySQL Workbench: Datei öffnen, Blitz-Symbol, danach z. B.:
+
+```sql
+CALL sp_produkte_filtern('Hund', NULL);
+CALL sp_warenkorb_hinzufuegen(1, 3, 2);
+CALL sp_warenkorb_anzeigen(1);
+CALL sp_bestellung_aufgeben(1, 'Max', 'Muster', 'max@beispiel.ch', '079 123 45 67',
+  'Hauptstrasse 1', '8213', 'Neunkirch', 'Rechnung', @bestellung);
+SELECT @bestellung;
+CALL sp_ernaehrungsplan(1, 'Hund');
+CALL sp_umsatz_pro_produkt();
+```
+
+| Prozedur | Aufgabe |
+|---|---|
+| `sp_produkte_filtern(tier, futterart)` | Produkte filtern, `NULL` = alle |
+| `sp_benutzer_registrieren(name, email, hash, OUT id)` | User und Warenkorb in einer Transaktion anlegen |
+| `sp_login_protokollieren(user_id, ip)` | Eintrag in `login_log` |
+| `sp_warenkorb_anzeigen(user_id)` | Positionen mit Zwischensumme |
+| `sp_warenkorb_hinzufuegen(user_id, product_id, menge)` | Hinzufügen oder Menge erhöhen (höchstens 99) |
+| `sp_warenkorb_entfernen(user_id, product_id)` | Position löschen |
+| `sp_bestellung_aufgeben(user_id, …, zahlungsart, OUT order_id)` | Warenkorb als Bestellung speichern und leeren (Transaktion, Fehler bei leerem Warenkorb) |
+| `sp_bestellungen_anzeigen(user_id)` | Meine Bestellungen |
+| `sp_ernaehrungsplan(condition_id, tier)` | Schritte und passende Produkte |
+| `sp_umsatz_pro_produkt()` | Verkaufte Menge und Umsatz pro Produkt |
+| `sp_benutzer_suchen(email)` | User für Login und Registrierung |
+| `sp_passwort_aendern(user_id, hash)` | Neuen Passwort-Hash speichern |
+| `sp_benutzer_rolle(user_id)` | Rolle `kunde`/`admin` |
+| `sp_warenkorb_id(user_id)` | Nummer des Warenkorbs |
+| `sp_warenkorb_menge_aendern(user_id, product_id, delta)` | Menge ändern, bei 0 entfernen |
+| `sp_gastbestellung_anlegen(…, OUT order_id)` | Bestellung eines Gasts (ohne User) |
+| `sp_bestellposition_hinzufuegen(order_id, product_id, menge)` | Position mit aktuellem Namen und Preis |
+| `sp_bestellung_total_berechnen(order_id)` | Total aus den Positionen rechnen |
+| `sp_newsletter_anmelden(email)` | Newsletter-Anmeldung |
+| `sp_krankheiten_liste()` | Krankheiten für den Ernährungsplan |
+| `sp_kombinationshinweise('1,4')` | Hinweise zu mehreren Krankheiten |
+| `sp_plan_speichern(user_id, tier, name, '1,4', OUT plan_id)` | Plan speichern |
+| `sp_plan_loeschen(plan_id, user_id)` | Eigenen Plan löschen |
+| `sp_plaene_anzeigen(user_id)` | Meine Pläne |
+
+Fehler meldet eine Prozedur mit `SIGNAL` (z. B. „Der Warenkorb ist leer.“),
+Transaktionen werden bei einem Fehler mit `ROLLBACK` zurückgesetzt.
+Ob die Website die Prozeduren aufruft, entscheidet `DB_PROCEDURES` in
+`includes/config.local.php` (siehe *Online stellen mit Stored Procedures*).
+InfinityFree erlaubt keine Stored Procedures: dort `procedures.sql` nicht
+importieren und `DB_PROCEDURES` weglassen. Getestet mit MySQL 8 (Workbench)
+und MariaDB 10.11.
+
 ## Entscheidungen im Projektverlauf
 
 Wichtige Entscheidungen, damit man nachvollziehen kann, warum das Projekt so
@@ -660,6 +751,9 @@ aufgebaut ist:
 | Zahlung | Nur die Zahlungsart wird gespeichert, keine Kartendaten | Kartendaten dürfen nur zertifizierte Zahlungsanbieter verarbeiten (PCI DSS) |
 | Löschregeln | Standard `CASCADE`, Ausnahmen `SET NULL` (Bestellungen bleiben) und `RESTRICT` (bestellte Produkte) | Bestellungen sind Geschäftsunterlagen und müssen erhalten bleiben |
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
+| API-Unterordner (2026-11-27) | Die 12 PHP-Dateien in `api/` nach Thema aufgeteilt: `konto/`, `shop/`, `ernaehrungsplan/`, `admin/` | Man findet eine Datei schneller und sieht sofort, wozu sie gehört |
+| Stored Procedures (2026-11-27) | Abläufe zusätzlich als Prozeduren in `database/procedures.sql`; PHP ruft sie nicht auf, sondern nutzt weiter Prepared Statements | InfinityFree erlaubt auf dem Gratis-Hosting keine Stored Procedures, die Live-Seite muss trotzdem laufen |
+| Umzug zu alwaysdata (2026-11-27) | Schalter `DB_PROCEDURES` in `config.local.php`: `true` = PHP ruft die Prozeduren mit `CALL` auf, sonst Prepared Statements wie bisher. Kein eigener Branch. | alwaysdata erlaubt Prozeduren. Mit dem Schalter läuft derselbe Code bei beiden Anbietern, InfinityFree muss nichts ändern, und Fehler müssen nicht in zwei Versionen behoben werden. |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |

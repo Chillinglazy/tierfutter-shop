@@ -10,6 +10,7 @@ config.local.php
 !update_ernaehrungsplan.sql
 !update_admin.sql
 !update_utf8mb4.sql
+!procedures.sql
 
 # Logs und temporäre Dateien
 *.log
@@ -30,3 +31,6 @@ EER-Diagramm.png
 
 # Upload-Paket für das Hosting (enthält echte Zugangsdaten)
 online-upload/
+
+# Upload-Paket für alwaysdata (config.local.php mit echten Zugangsdaten)
+online-upload-alwaysdata/

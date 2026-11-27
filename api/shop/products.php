@@ -1,14 +1,19 @@
 <?php
 // PRODUKTE: Alle Produkte aus der Datenbank für die Website (ohne Login).
 // Antwort: {products: [{product_id, name, description, price, ...}, ...]}
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
-$rows = $pdo->query(
-  'SELECT product_id, name, description, price, image_path, animal, food_type, special, taste,
-          size, tag, color, tint, age_min, age_max, weight_min, weight_max
-   FROM products
-   ORDER BY product_id'
-)->fetchAll();
+if (USE_PROCEDURES) {
+  // NULL, NULL = nicht nach Tier und Futterart filtern
+  $rows = db_call($pdo, 'sp_produkte_filtern(NULL, NULL)')[0] ?? [];
+} else {
+  $rows = $pdo->query(
+    'SELECT product_id, name, description, price, image_path, animal, food_type, special, taste,
+            size, tag, color, tint, age_min, age_max, weight_min, weight_max
+     FROM products
+     ORDER BY product_id'
+  )->fetchAll();
+}
 
 // DECIMAL kommt als Text aus der Datenbank, für JavaScript in Zahlen umwandeln.
 foreach ($rows as &$row) {
