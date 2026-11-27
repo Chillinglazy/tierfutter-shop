@@ -5,7 +5,7 @@
 // POST {"action":"save","condition_ids":[1,4],"animal":"Hund","pet_name":"Bello"} → Liste
 // POST {"action":"delete","plan_id":3}                                              → Liste
 // Antwort: {plans: [{plan_id, animal, pet_name, created_at, conditions: [{condition_id, name, icon}]}, ...]}
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 const SAVED_PLAN_ANIMALS = ['Hund', 'Katze']; // gleich wie chk_saved_plans_animal
 const MAX_SAVED_PLANS = 20;

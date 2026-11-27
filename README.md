@@ -43,7 +43,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | Bereich | Stand |
 |---|---|
 | Landingpage mit Produktfilter (`index.html`, `css/style.css`, `js/script.js`) | ✅ fertig |
-| Produkte aus der Datenbank (`api/products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
+| Produkte aus der Datenbank (`api/shop/products.php`), Änderung in phpMyAdmin sofort sichtbar | ✅ fertig |
 | Datenbankschema mit echten Produkten (`database/schema.sql`) | ✅ fertig, in MariaDB 10.4 (XAMPP) getestet |
 | Registrierung (Name, E-Mail, Passwort) | ✅ fertig |
 | Login / Logout mit Session und Login-Protokoll | ✅ fertig |
@@ -53,14 +53,14 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | Bestellung mit Kontaktdaten, Lieferadresse und Zahlungsart (auch als Gast) | ✅ fertig |
 | Pflicht-Zustimmung zu AGB und Datenschutz, Newsletter freiwillig | ✅ fertig |
 | "Meine Bestellungen" für eingeloggte User | ✅ fertig |
-| Ernährungsplan für 7 Krankheiten/Kategorien mit passenden Produkten (`api/diet_plan.php`) | ✅ fertig |
+| Ernährungsplan für 7 Krankheiten/Kategorien mit passenden Produkten (`api/ernaehrungsplan/diet_plan.php`) | ✅ fertig |
 | 14 Diät-Produkte (Hund und Katze) für den Ernährungsplan | ✅ fertig |
 | Ernährungsplan oben auf der Startseite, Auswahl mit Kacheln, Knopf im Hero-Bereich | ✅ fertig |
-| "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/saved_plans.php`) | ✅ fertig |
+| "Meine Pläne": Ernährungspläne im Kundenkonto speichern, anzeigen, löschen (`api/ernaehrungsplan/saved_plans.php`) | ✅ fertig |
 | Mehrere Krankheiten gleichzeitig wählen: kombinierter Plan mit Hinweisen zu Kombinationen | ✅ fertig |
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
 | Online stellen bei InfinityFree: https://tierfutter-shop.great-site.net | ✅ online |
-| Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin_db.php`), Knopf *⚙ Admin* im Header mit eigenem Admin-Login | ✅ fertig |
+| Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin/admin_db.php`), Knopf *⚙ Admin* im Header mit eigenem Admin-Login | ✅ fertig |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
@@ -133,7 +133,7 @@ PHP läuft nur über den Apache-Server, nicht beim Doppelklick auf
 InfinityFree, PHP 8 und MySQL/MariaDB).
 
 Der Code musste dafür kaum geändert werden: Alle Pfade sind relativ
-(`api/products.php`), der Shop läuft deshalb im Hauptordner (`htdocs/`)
+(`api/shop/products.php`), der Shop läuft deshalb im Hauptordner (`htdocs/`)
 genauso wie lokal im Unterordner `tierfutter-shop/`. Die Zugangsdaten stehen
 schon getrennt vom Code in `includes/config.local.php`.
 
@@ -167,8 +167,8 @@ schon getrennt vom Code in `includes/config.local.php`.
 
 **Update Datenbankverwaltung (Admin):** Auf dem Server diese Dateien neu
 hochladen bzw. ersetzen: `index.html`, `admin.html`, `js/script.js`,
-`js/admin.js`, `css/admin.css`, `api/admin_db.php`, `api/admin_login.php`,
-`api/login.php`, `api/session.php`, `includes/config.php` (die vorhandene
+`js/admin.js`, `css/admin.css`, `api/admin/admin_db.php`, `api/admin/admin_login.php`,
+`api/konto/login.php`, `api/konto/session.php`, `includes/config.php` (die vorhandene
 `includes/config.local.php` **nicht** überschreiben, sonst ist das
 Datenbank-Passwort weg). In phpMyAdmin der
 Online-Datenbank (Reiter *SQL*) den Inhalt von `database/update_admin.sql`
@@ -183,7 +183,7 @@ weil seine `config.local.php` das echte Passwort enthält.
 
 Der Shop zeigt Fehlerdetails absichtlich nicht im Browser. Am schnellsten
 grenzt man einen Fehler ein, indem man die API direkt aufruft:
-`https://tierfutter-shop.great-site.net/api/products.php`.
+`https://tierfutter-shop.great-site.net/api/shop/products.php`.
 
 | Anzeige | Ursache | Lösung |
 |---|---|---|
@@ -210,6 +210,10 @@ tierfutter-shop/
 ├── js/                 Verhalten im Browser
 ├── assets/             Bilder
 ├── api/                PHP-Dateien, die script.js per fetch aufruft
+│   ├── konto/          Registrieren, Login, Logout, Session
+│   ├── shop/           Produkte, Warenkorb, Bestellen, Meine Bestellungen
+│   ├── ernaehrungsplan/ Ernährungsplan und gespeicherte Pläne
+│   └── admin/          Admin-Login und Datenbankverwaltung
 ├── includes/           PHP-Dateien, die nur eingebunden werden (gesperrt)
 ├── database/           SQL-Skripte für phpMyAdmin (gesperrt)
 ├── README.md           Projektdokumentation (gesperrt)
@@ -234,18 +238,18 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Formulare, Smartphone-Ansicht |
 | `js/script.js` | Produkte laden und anzeigen, Filter, Ernährungsplan und "Meine Pläne", Warenkorb, Login-Ablauf, Bestellen |
 | `assets/logo.png` | Shop-Logo |
-| `api/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
-| `api/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
-| `api/login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
-| `api/logout.php` | Session beenden |
-| `api/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
-| `api/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
-| `api/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
-| `api/orders.php` | Bestellungen des eingeloggten Users |
-| `api/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
-| `api/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
-| `api/admin_login.php` | Admin-Login für die Datenbankverwaltung: prüft Passwort und Rolle `admin`, setzt den Admin-Zugang in der Session; `logout` beendet ihn |
-| `api/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
+| `api/shop/products.php` | Liefert alle Produkte aus der Datenbank (ohne Login) |
+| `api/konto/register.php` | Registrierung: Eingaben prüfen, Passwort hashen, User + Warenkorb anlegen |
+| `api/konto/login.php` | Login: Passwort prüfen, Session starten, Eintrag in `login_log` |
+| `api/konto/logout.php` | Session beenden |
+| `api/konto/session.php` | Gibt zurück, ob und wer eingeloggt ist (beim Laden der Seite) |
+| `api/shop/cart.php` | Warenkorb laden, Produkt hinzufügen, Menge ändern, entfernen, Gast-Warenkorb übernehmen |
+| `api/shop/order.php` | Bestellung prüfen und speichern (Gast oder eingeloggt), Newsletter-Anmeldung |
+| `api/shop/orders.php` | Bestellungen des eingeloggten Users |
+| `api/ernaehrungsplan/diet_plan.php` | Liste der Krankheiten/Kategorien; Ernährungsplan für eine oder mehrere Krankheiten + Tier mit passenden Produkt-IDs und Hinweisen zu Kombinationen (ohne Login) |
+| `api/ernaehrungsplan/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
+| `api/admin/admin_login.php` | Admin-Login für die Datenbankverwaltung: prüft Passwort und Rolle `admin`, setzt den Admin-Zugang in der Session; `logout` beendet ihn |
+| `api/admin/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
@@ -260,7 +264,10 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
 Alle PHP-Dateien in `api/` antworten mit JSON und werden von `js/script.js`
-über die Funktion `api()` per `fetch` aufgerufen. Es gibt keine eigenen
+über die Funktion `api()` per `fetch` aufgerufen (z. B. `api('shop/cart.php')`).
+Sie sind nach Thema in Unterordner sortiert: `konto/`, `shop/`,
+`ernaehrungsplan/` und `admin/`. Jede Datei bindet zuerst
+`includes/config.php` ein (`require __DIR__ . '/../../includes/config.php'`). Es gibt keine eigenen
 PHP-Seiten, die Seite bleibt `index.html`.
 
 ---
@@ -542,11 +549,11 @@ steht immer sichtbar über dem Formular und unter jedem Plan.
 **Meine Bestellungen:** Eingeloggte User sehen im Header den Knopf
 "Bestellungen" mit allen früheren Bestellungen (`orders.php`).
 
-### Warenkorb-API (`api/cart.php`)
+### Warenkorb-API (`api/shop/cart.php`)
 
 | Anfrage | Wirkung |
 |---|---|
-| `GET api/cart.php` | Warenkorb laden |
+| `GET api/shop/cart.php` | Warenkorb laden |
 | `POST {"action":"add","product_id":1,"quantity":1}` | Hinzufügen (`quantity` optional) |
 | `POST {"action":"change","product_id":1,"delta":-1}` | Menge ändern, bei 0 entfernen |
 | `POST {"action":"remove","product_id":1}` | Entfernen |
@@ -580,9 +587,9 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 - Newsletter nur mit ausdrücklicher Zustimmung (Opt-in), Häkchen nicht vorausgewählt.
 - Technische Fehlermeldungen landen im PHP-Fehlerlog, nicht im Browser
 - **Datenbankverwaltung nur für Admins:** Der Knopf *⚙ Admin* ist für alle
-  sichtbar, führt aber zuerst zum Admin-Login (`api/admin_login.php`). Der
+  sichtbar, führt aber zuerst zum Admin-Login (`api/admin/admin_login.php`). Der
   prüft Passwort **und** Rolle `admin` und setzt erst dann den Admin-Zugang in
-  der Session. Ein normaler Shop-Login reicht nicht. `api/admin_db.php` prüft bei
+  der Session. Ein normaler Shop-Login reicht nicht. `api/admin/admin_db.php` prüft bei
   jeder Anfrage den Admin-Zugang und liest die Rolle neu aus `users.role`
   (wird jemandem die Rolle entzogen, ist der Zugang sofort weg).
   *Admin abmelden* beendet nur den Admin-Zugang, Logout im Shop beides.
@@ -660,6 +667,7 @@ aufgebaut ist:
 | Zahlung | Nur die Zahlungsart wird gespeichert, keine Kartendaten | Kartendaten dürfen nur zertifizierte Zahlungsanbieter verarbeiten (PCI DSS) |
 | Löschregeln | Standard `CASCADE`, Ausnahmen `SET NULL` (Bestellungen bleiben) und `RESTRICT` (bestellte Produkte) | Bestellungen sind Geschäftsunterlagen und müssen erhalten bleiben |
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
+| API-Unterordner (2026-11-27) | Die 12 PHP-Dateien in `api/` nach Thema aufgeteilt: `konto/`, `shop/`, `ernaehrungsplan/`, `admin/` | Man findet eine Datei schneller und sieht sofort, wozu sie gehört |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |

@@ -10,7 +10,7 @@
 // SICHERHEIT: Tabellen- und Spaltennamen kommen nie direkt aus dem Request ins SQL.
 // Bestehende Namen werden mit information_schema abgeglichen und von dort übernommen,
 // neue Namen müssen dem Muster a-z, 0-9, _ entsprechen. Alle Werte gehen über Platzhalter (?).
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 $adminId = require_admin($pdo);
 

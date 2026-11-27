@@ -5,7 +5,7 @@
 // Eingeloggt: Positionen kommen aus dem Warenkorb in der Datenbank, items wird ignoriert.
 // Gast: Positionen aus items. Preise kommen immer aus der Datenbank, nie aus der Anfrage.
 // Antwort: {order_id, total}
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 const PAYMENT_METHODS = ['Rechnung', 'TWINT', 'Kreditkarte']; // gleich wie CHECK in schema.sql
 

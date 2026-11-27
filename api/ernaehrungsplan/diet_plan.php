@@ -5,7 +5,7 @@
 // GET api/diet_plan.php?condition_ids=1,4&animal=Hund   (eine oder mehrere Krankheiten)
 //   → {plan: {animal, conditions: [{condition_id, name, icon, goal, steps: [{label, text}], product_ids: [...]}],
 //             notes: [{names: ['Übergewicht', 'Chronische Nierenerkrankung'], note}]}}
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 const PLAN_ANIMALS = ['Hund', 'Katze']; // gleich wie chk_plan_steps_animal
 

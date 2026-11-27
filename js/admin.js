@@ -1,4 +1,4 @@
-// ADMIN: Datenbankverwaltung. Spricht nur mit api/admin_db.php.
+// ADMIN: Datenbankverwaltung. Spricht nur mit api/admin/admin_db.php.
 // Der Server prüft bei jeder Anfrage, ob der eingeloggte Benutzer Admin ist.
 let csrf = '';
 let types = {}; // erlaubte Datentypen für neue Spalten {int: 'Ganzzahl', ...}
@@ -13,7 +13,7 @@ const $ = id => document.getElementById(id);
 async function adminApi(params, data) {
   let res, json;
   try {
-    res = await fetch('api/admin_db.php' + (params ? '?' + new URLSearchParams(params) : ''), data ? {
+    res = await fetch('api/admin/admin_db.php' + (params ? '?' + new URLSearchParams(params) : ''), data ? {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
       body: JSON.stringify(data)
@@ -41,12 +41,12 @@ function showLogin() {
   $('loginEmail').focus()
 }
 
-// Anmelden über api/admin_login.php: prüft Passwort UND Rolle admin.
+// Anmelden über api/admin/admin_login.php: prüft Passwort UND Rolle admin.
 $('adminLogin').addEventListener('submit', async e => {
   e.preventDefault();
   $('loginMessage').textContent = '';
   try {
-    const res = await fetch('api/admin_login.php', {
+    const res = await fetch('api/admin/admin_login.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: $('loginEmail').value, password: $('loginPassword').value })
@@ -64,7 +64,7 @@ $('adminLogin').addEventListener('submit', async e => {
 // Admin abmelden: beendet nur den Zugang zur Datenbankverwaltung.
 $('logoutAdmin').addEventListener('click', async () => {
   try {
-    await fetch('api/admin_login.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
+    await fetch('api/admin/admin_login.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) })
   } catch {}
   showLogin()
 });
@@ -277,7 +277,7 @@ async function refresh() {
 
 // START: Zugriff prüfen und Tabellen laden.
 function start() {
-  fetch('api/session.php').then(r => r.json()).then(res => {
+  fetch('api/konto/session.php').then(r => r.json()).then(res => {
     if (res.user?.admin) $('adminUser').textContent = 'Admin: ' + res.user.name
   }).catch(() => {});
   loadTables().then(() => {

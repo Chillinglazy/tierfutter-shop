@@ -1,7 +1,7 @@
 <?php
 // MEINE BESTELLUNGEN: alle Bestellungen des eingeloggten Users, neueste zuerst.
 // Antwort: {orders: [{order_id, ordered_at, total, payment_method, items: [{product_name, quantity, unit_price}]}]}
-require __DIR__ . '/../includes/config.php';
+require __DIR__ . '/../../includes/config.php';
 
 $userId = require_login();
 
