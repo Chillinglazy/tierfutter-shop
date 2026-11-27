@@ -260,6 +260,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `database/update_ernaehrungsplan.sql` | Nur die Ernährungsplan-Tabellen, gespeicherte Pläne und Diät-Produkte (für eine bestehende Datenbank) |
 | `database/update_admin.sql` | Nur die Spalte `users.role` für die Admin-Rolle (für eine bestehende Datenbank) |
 | `database/update_utf8mb4.sql` | Stellt alle Tabellen auf `utf8mb4` um und trägt die Symbole der Krankheiten neu ein (wenn sie als `?` erscheinen) |
+| `database/procedures.sql` | 10 Stored Procedures für die wichtigsten Abläufe (Produkte filtern, Registrieren, Login-Protokoll, Warenkorb, Bestellen, Meine Bestellungen, Ernährungsplan, Umsatz pro Produkt), zum Ausprobieren in MySQL Workbench |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
@@ -652,6 +653,42 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 13. Als Gast "Einloggen und Plan speichern" → Login. Eingeloggt "Plan speichern", dann im Header "Meine Pläne": Plan anzeigen und löschen.
 14. Knopf *⚙ Admin*: Admin-Login erscheint (auch wenn man im Shop schon eingeloggt ist). Mit Kundenkonto: "Dieses Konto hat keine Admin-Rechte." Mit Admin-Konto: Tabelle `lieferanten` mit Spalte `firma` (Text) erstellen, eine Zeile einfügen, bearbeiten, löschen, Tabelle wieder löschen. `products` kann nicht gelöscht werden, die Spalte `price` auch nicht.
 
+## Stored Procedures
+
+`database/procedures.sql` legt 10 gespeicherte Prozeduren an. Sie machen
+dasselbe wie die PHP-Dateien, laufen aber direkt in der Datenbank.
+MySQL Workbench: Datei öffnen, Blitz-Symbol, danach z. B.:
+
+```sql
+CALL sp_produkte_filtern('Hund', NULL);
+CALL sp_warenkorb_hinzufuegen(1, 3, 2);
+CALL sp_warenkorb_anzeigen(1);
+CALL sp_bestellung_aufgeben(1, 'Max', 'Muster', 'max@beispiel.ch', '079 123 45 67',
+  'Hauptstrasse 1', '8213', 'Neunkirch', 'Rechnung', @bestellung);
+SELECT @bestellung;
+CALL sp_ernaehrungsplan(1, 'Hund');
+CALL sp_umsatz_pro_produkt();
+```
+
+| Prozedur | Aufgabe |
+|---|---|
+| `sp_produkte_filtern(tier, futterart)` | Produkte filtern, `NULL` = alle |
+| `sp_benutzer_registrieren(name, email, hash, OUT id)` | User und Warenkorb in einer Transaktion anlegen |
+| `sp_login_protokollieren(user_id, ip)` | Eintrag in `login_log` |
+| `sp_warenkorb_anzeigen(user_id)` | Positionen mit Zwischensumme |
+| `sp_warenkorb_hinzufuegen(user_id, product_id, menge)` | Hinzufügen oder Menge erhöhen (höchstens 99) |
+| `sp_warenkorb_entfernen(user_id, product_id)` | Position löschen |
+| `sp_bestellung_aufgeben(user_id, …, zahlungsart, OUT order_id)` | Warenkorb als Bestellung speichern und leeren (Transaktion, Fehler bei leerem Warenkorb) |
+| `sp_bestellungen_anzeigen(user_id)` | Meine Bestellungen |
+| `sp_ernaehrungsplan(condition_id, tier)` | Schritte und passende Produkte |
+| `sp_umsatz_pro_produkt()` | Verkaufte Menge und Umsatz pro Produkt |
+
+Fehler meldet eine Prozedur mit `SIGNAL` (z. B. „Der Warenkorb ist leer.“),
+Transaktionen werden bei einem Fehler mit `ROLLBACK` zurückgesetzt.
+Die Website ruft die Prozeduren **nicht** auf: InfinityFree erlaubt auf dem
+Gratis-Hosting keine Stored Procedures. `procedures.sql` deshalb nur lokal
+in Workbench ausführen, nicht im phpMyAdmin von InfinityFree.
+
 ## Entscheidungen im Projektverlauf
 
 Wichtige Entscheidungen, damit man nachvollziehen kann, warum das Projekt so
@@ -668,6 +705,7 @@ aufgebaut ist:
 | Löschregeln | Standard `CASCADE`, Ausnahmen `SET NULL` (Bestellungen bleiben) und `RESTRICT` (bestellte Produkte) | Bestellungen sind Geschäftsunterlagen und müssen erhalten bleiben |
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
 | API-Unterordner (2026-11-27) | Die 12 PHP-Dateien in `api/` nach Thema aufgeteilt: `konto/`, `shop/`, `ernaehrungsplan/`, `admin/` | Man findet eine Datei schneller und sieht sofort, wozu sie gehört |
+| Stored Procedures (2026-11-27) | Abläufe zusätzlich als Prozeduren in `database/procedures.sql`; PHP ruft sie nicht auf, sondern nutzt weiter Prepared Statements | InfinityFree erlaubt auf dem Gratis-Hosting keine Stored Procedures, die Live-Seite muss trotzdem laufen |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |

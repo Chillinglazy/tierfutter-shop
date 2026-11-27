@@ -10,6 +10,7 @@ config.local.php
 !update_ernaehrungsplan.sql
 !update_admin.sql
 !update_utf8mb4.sql
+!procedures.sql
 
 # Logs und temporäre Dateien
 *.log
