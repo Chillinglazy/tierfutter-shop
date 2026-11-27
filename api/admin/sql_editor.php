@@ -8,9 +8,14 @@
 // jedes Argument muss eine Zahl, ein Text in '…', NULL/TRUE/FALSE oder eine Variable @name
 // sein. Werte gehen über Platzhalter (?), Variablen nur nach Prüfung mit einem Muster.
 // Andere Befehle (SELECT, DELETE, DROP …) und mehrere Befehle werden abgelehnt.
+//
+// SONDERFÄLLE:
+//   sp_passwort_aendern(id, 'neues Passwort') → der Server macht aus dem Klartext zuerst den
+//     Hash (password_hash), sonst könnte sich der User nicht mehr einloggen.
+//   sp_rolle_aendern(id, 'kunde')              → sich selbst die Admin-Rolle wegnehmen geht nicht.
 require __DIR__ . '/../../includes/config.php';
 
-require_admin($pdo);
+$adminId = require_admin($pdo);
 
 const MAX_RESULT_ROWS = 500; // mehr Zeilen pro Ergebnis werden abgeschnitten
 const MAX_SQL_LENGTH = 5000;
@@ -169,6 +174,36 @@ foreach ($params as $i => $p) {
     $values[] = $arg['value'];
   }
 }
+// PASSWORT ÄNDERN: Klartext prüfen (8–72 Zeichen wie bei der Registrierung) und hashen.
+// Ein fertiger bcrypt-Hash ($2y$…) wird unverändert übernommen.
+$message = null;
+$shownValues = $values;
+$procKey = strtolower($proc['name']);
+if ($procKey === 'sp_passwort_aendern' && !isset($args[0]['var']) && !isset($args[1]['var'])) {
+  $userId = $args[0]['value'];
+  $password = (string) $args[1]['value'];
+  $stmt = $pdo->prepare('SELECT name FROM users WHERE user_id = ?');
+  $stmt->execute([$userId]);
+  $userName = $stmt->fetchColumn();
+  if ($userName === false) sql_error("Einen User mit der Nummer $userId gibt es nicht.");
+  if (!preg_match('/^\$2[aby]\$\d\d\$[.\/A-Za-z0-9]{53}$/', $password)) {
+    if (strlen($password) < 8 || strlen($password) > 72) {
+      sql_error('Das neue Passwort muss 8 bis 72 Zeichen lang sein.');
+    }
+    $values[1] = password_hash($password, PASSWORD_DEFAULT);
+    $message = "Neues Passwort für $userName (User $userId) gespeichert, als Hash. Der Login klappt sofort mit dem neuen Passwort.";
+  } else {
+    $message = "Passwort-Hash für $userName (User $userId) gespeichert.";
+  }
+  $shownValues[1] = '••• (Passwort versteckt)';
+}
+
+// ROLLE ÄNDERN: sich selbst nicht aussperren (wie in der Datenbankverwaltung).
+if ($procKey === 'sp_rolle_aendern' && !isset($args[0]['var']) && !isset($args[1]['var'])
+  && (int) $args[0]['value'] === $adminId && strtolower(trim((string) $args[1]['value'])) !== 'admin') {
+  sql_error('Du kannst dir die Admin-Rolle nicht selbst wegnehmen. Das muss ein anderer Admin machen.');
+}
+
 $call = 'CALL `' . $proc['name'] . '`(' . implode(', ', $placeholders) . ')';
 
 // AUSFÜHREN: alle Ergebnisse (Result Sets) sammeln, danach die Variablen lesen.
@@ -214,7 +249,8 @@ unset($r);
 
 json_response([
   'sql' => $call,
-  'params' => $values,
+  'params' => $shownValues,
+  'message' => $message,
   'results' => $results,
   'ms' => (int) round((microtime(true) - $start) * 1000),
 ]);

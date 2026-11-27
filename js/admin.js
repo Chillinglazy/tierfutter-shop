@@ -332,6 +332,8 @@ $('sqlProcList').addEventListener('click', e => {
   const args = p.params.map(a => {
     if (a.mode !== 'IN') return '@' + a.name.replace(/^p_/, '');
     if (/int|decimal|float|double|numeric/.test(a.type)) return '1';
+    if (/password/.test(a.name)) return "'NeuesPasswort123'";
+    if (a.name === 'p_role') return "'admin'";
     if (/^(date|datetime|timestamp)/.test(a.type)) return "'2026-01-01'";
     return `'${a.name.replace(/^p_/, '')}'`
   });
@@ -377,6 +379,7 @@ function showSqlResults(res) {
   const sets = res.results.filter(r => !r.variables);
   let html = `<p class="sql-ok">✔ Ausgeführt um ${time} in ${res.ms} ms · ${sets.length ? sets.length + ' Ergebnis' + (sets.length > 1 ? 'se' : '') : 'kein Ergebnis (Befehl ohne Ausgabe)'}</p>`;
   html += `<p class="sql-sent">Gesendet: <code>${esc(res.sql)}</code>${res.params.length ? ' mit Werten <code>' + esc(res.params.map(v => v === null ? 'NULL' : JSON.stringify(v)).join(', ')) + '</code>' : ''}</p>`;
+  if (res.message) html += `<p class="sql-ok">${esc(res.message)}</p>`;
   html += res.results.map((r, i) => {
     const title = r.variables ? 'OUT-Variablen' : `Ergebnis ${i + 1}`;
     const info = r.variables ? '' : ` <small>${r.total} Zeile${r.total === 1 ? '' : 'n'}${r.total > r.rows.length ? ` · die ersten ${r.rows.length} angezeigt` : ''}</small>`;

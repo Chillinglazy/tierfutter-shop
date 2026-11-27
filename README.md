@@ -291,7 +291,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `database/update_ernaehrungsplan.sql` | Nur die Ernährungsplan-Tabellen, gespeicherte Pläne und Diät-Produkte (für eine bestehende Datenbank) |
 | `database/update_admin.sql` | Nur die Spalte `users.role` für die Admin-Rolle (für eine bestehende Datenbank) |
 | `database/update_utf8mb4.sql` | Stellt alle Tabellen auf `utf8mb4` um und trägt die Symbole der Krankheiten neu ein (wenn sie als `?` erscheinen) |
-| `database/procedures.sql` | 24 Stored Procedures (Produkte, Registrieren, Login, Warenkorb, Bestellen auch als Gast, Meine Bestellungen, Ernährungsplan, Meine Pläne, Umsatz pro Produkt); in Workbench zum Ausprobieren, bei alwaysdata ruft die Website sie auf (`DB_PROCEDURES = true`) |
+| `database/procedures.sql` | 25 Stored Procedures (Produkte, Registrieren, Login, Warenkorb, Bestellen auch als Gast, Meine Bestellungen, Ernährungsplan, Meine Pläne, Umsatz pro Produkt, Rolle ändern); in Workbench zum Ausprobieren, bei alwaysdata ruft die Website sie auf (`DB_PROCEDURES = true`) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
@@ -686,10 +686,11 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 
 ## Stored Procedures
 
-`database/procedures.sql` legt 24 gespeicherte Prozeduren an. Sie machen
+`database/procedures.sql` legt 25 gespeicherte Prozeduren an. Sie machen
 dasselbe wie die PHP-Dateien, laufen aber direkt in der Datenbank. Die ersten
 10 sind die wichtigsten Abläufe zum Zeigen, die weiteren 14 braucht die
 Website zusätzlich, wenn sie mit `DB_PROCEDURES = true` läuft (alwaysdata).
+`sp_rolle_aendern` ist für Admins im SQL-Editor gedacht.
 MySQL Workbench: Datei öffnen, Blitz-Symbol, danach z. B.:
 
 ```sql
@@ -716,8 +717,9 @@ CALL sp_umsatz_pro_produkt();
 | `sp_ernaehrungsplan(condition_id, tier)` | Schritte und passende Produkte |
 | `sp_umsatz_pro_produkt()` | Verkaufte Menge und Umsatz pro Produkt |
 | `sp_benutzer_suchen(email)` | User für Login und Registrierung |
-| `sp_passwort_aendern(user_id, hash)` | Neuen Passwort-Hash speichern |
+| `sp_passwort_aendern(user_id, hash)` | Neuen Passwort-Hash speichern (im SQL-Editor der Website darf man das Passwort im Klartext angeben, der Server hasht es) |
 | `sp_benutzer_rolle(user_id)` | Rolle `kunde`/`admin` |
+| `sp_rolle_aendern(user_id, 'admin')` | Rolle auf `kunde` oder `admin` setzen; andere Werte, unbekannte User und das Entfernen des letzten Admins werden abgelehnt |
 | `sp_warenkorb_id(user_id)` | Nummer des Warenkorbs |
 | `sp_warenkorb_menge_aendern(user_id, product_id, delta)` | Menge ändern, bei 0 entfernen |
 | `sp_gastbestellung_anlegen(…, OUT order_id)` | Bestellung eines Gasts (ohne User) |
@@ -756,6 +758,17 @@ Anzahl Werte, und setzt die Werte über Platzhalter (`?`) ein. `SELECT`,
 `DELETE`, `DROP`, Unterabfragen oder ein zweiter Befehl werden abgelehnt.
 Passwort-Hashes (z. B. bei `sp_benutzer_suchen`) erscheinen als
 „••• (versteckt)“. Pro Ergebnis werden höchstens 500 Zeilen angezeigt.
+
+Zwei Sonderfälle:
+- **Passwort ändern:** `CALL sp_passwort_aendern(2, 'NeuesPasswort123');`
+  Der Server prüft die Länge (8–72 Zeichen wie bei der Registrierung) und
+  speichert nur den Hash (`password_hash`). Das Passwort erscheint nicht in
+  der Ausgabe. In Workbench oder phpMyAdmin dagegen nie Klartext übergeben,
+  sonst klappt der Login nicht mehr.
+- **Rolle wechseln:** `CALL sp_rolle_aendern(2, 'admin');` bzw. `'kunde'`.
+  Sich selbst die Admin-Rolle wegnehmen geht nicht (wie in der
+  Datenbankverwaltung), und der letzte Admin bleibt immer Admin. Der User
+  meldet sich danach neu im Admin-Bereich an.
 
 Auf InfinityFree gibt es keine Prozeduren: Der Editor zeigt dann einen
 Hinweis statt der Liste. Sind die Prozeduren importiert, aber

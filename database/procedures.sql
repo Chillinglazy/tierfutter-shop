@@ -1,4 +1,4 @@
--- Tierfutter-Shop – Stored Procedures (24 Prozeduren)
+-- Tierfutter-Shop – Stored Procedures (25 Prozeduren)
 -- Die Abläufe des Shops als gespeicherte Prozeduren (Stored Procedures).
 -- Zum Zeigen und Ausprobieren in MySQL Workbench (MySQL 8) bzw. MariaDB.
 -- MySQL Workbench: Datei öffnen → Blitz-Symbol (ganzes Skript ausführen).
@@ -36,6 +36,7 @@ DROP PROCEDURE IF EXISTS tierfutter_shop.sp_umsatz_pro_produkt;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_benutzer_suchen;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_passwort_aendern;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_benutzer_rolle;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_rolle_aendern;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_warenkorb_id;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_warenkorb_menge_aendern;
 DROP PROCEDURE IF EXISTS tierfutter_shop.sp_gastbestellung_anlegen;
@@ -249,6 +250,9 @@ BEGIN
 END$$
 
 -- PASSWORT-HASH ERSETZEN (wenn PHP einen neueren Hash-Standard verwendet).
+-- Erwartet den HASH, nicht das Passwort selbst. Im SQL-Editor der Website (admin.html) darf man
+-- das neue Passwort im Klartext eingeben: Der Server macht daraus zuerst den Hash.
+-- In Workbench/phpMyAdmin dagegen nie Klartext eintragen, sonst klappt der Login nicht mehr.
 -- Beispiel: CALL sp_passwort_aendern(1, '$2y$10$...');
 CREATE PROCEDURE tierfutter_shop.sp_passwort_aendern(IN p_user_id INT UNSIGNED, IN p_password_hash VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci)
 BEGIN
@@ -260,6 +264,32 @@ END$$
 CREATE PROCEDURE tierfutter_shop.sp_benutzer_rolle(IN p_user_id INT UNSIGNED)
 BEGIN
   SELECT role FROM users WHERE user_id = p_user_id;
+END$$
+
+-- ROLLE ÄNDERN: Kunde zum Admin machen oder umgekehrt. Erlaubt sind nur 'kunde' und 'admin'.
+-- Der letzte Admin kann nicht zum Kunden werden, sonst kommt niemand mehr in den Admin-Bereich.
+-- Danach muss sich der User neu im Admin-Bereich anmelden. Zeigt den User mit der neuen Rolle.
+-- Beispiel: CALL sp_rolle_aendern(2, 'admin');
+CREATE PROCEDURE tierfutter_shop.sp_rolle_aendern(IN p_user_id INT UNSIGNED, IN p_role VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci)
+BEGIN
+  DECLARE v_old VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL;
+  DECLARE v_new VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT LOWER(TRIM(p_role));
+
+  IF v_new IS NULL OR v_new NOT IN ('kunde', 'admin') THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Die Rolle muss kunde oder admin sein.';
+  END IF;
+
+  SELECT MAX(role) INTO v_old FROM users WHERE user_id = p_user_id;
+  IF v_old IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Einen User mit dieser Nummer gibt es nicht.';
+  END IF;
+
+  IF v_old = 'admin' AND v_new = 'kunde' AND (SELECT COUNT(*) FROM users WHERE role = 'admin') <= 1 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Der letzte Admin kann nicht zum Kunden werden.';
+  END IF;
+
+  UPDATE users SET role = v_new WHERE user_id = p_user_id;
+  SELECT user_id, name, email, role FROM users WHERE user_id = p_user_id;
 END$$
 
 -- WARENKORB-NUMMER eines Users (leer, wenn der User gelöscht wurde).
