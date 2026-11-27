@@ -10,27 +10,32 @@
 -- normalen SQL-Befehlen (Prepared Statements). Die Prozeduren machen dasselbe wie PHP.
 --
 -- Voraussetzung: Datenbank tierfutter_shop mit schema.sql (oder allen update_*.sql).
+-- Die Prozeduren tragen den Datenbanknamen (tierfutter_shop.sp_...), deshalb klappt das
+-- Anlegen auch, wenn nur ein einzelner Block ausgeführt wird oder keine Datenbank gewählt ist.
+-- Texte in den Parametern nutzen dieselbe Sortierung wie die Tabellen (utf8mb4_unicode_ci),
+-- sonst meldet MySQL 8 "Illegal mix of collations".
+-- Für die CALL-Beispiele vorher die Datenbank wählen: USE tierfutter_shop;
 
 SET NAMES utf8mb4;
 USE tierfutter_shop;
 
-DROP PROCEDURE IF EXISTS sp_produkte_filtern;
-DROP PROCEDURE IF EXISTS sp_benutzer_registrieren;
-DROP PROCEDURE IF EXISTS sp_login_protokollieren;
-DROP PROCEDURE IF EXISTS sp_warenkorb_anzeigen;
-DROP PROCEDURE IF EXISTS sp_warenkorb_hinzufuegen;
-DROP PROCEDURE IF EXISTS sp_warenkorb_entfernen;
-DROP PROCEDURE IF EXISTS sp_bestellung_aufgeben;
-DROP PROCEDURE IF EXISTS sp_bestellungen_anzeigen;
-DROP PROCEDURE IF EXISTS sp_ernaehrungsplan;
-DROP PROCEDURE IF EXISTS sp_umsatz_pro_produkt;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_produkte_filtern;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_benutzer_registrieren;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_login_protokollieren;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_warenkorb_anzeigen;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_warenkorb_hinzufuegen;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_warenkorb_entfernen;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_bestellung_aufgeben;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_bestellungen_anzeigen;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_ernaehrungsplan;
+DROP PROCEDURE IF EXISTS tierfutter_shop.sp_umsatz_pro_produkt;
 
 DELIMITER $$
 
 -- PRODUKTE: nach Tier und Futterart filtern (wie die Filter auf der Website).
 -- NULL bei einem Parameter = nicht filtern.
 -- Beispiel: CALL sp_produkte_filtern('Hund', NULL);
-CREATE PROCEDURE sp_produkte_filtern(IN p_animal VARCHAR(30), IN p_food_type VARCHAR(30))
+CREATE PROCEDURE tierfutter_shop.sp_produkte_filtern(IN p_animal VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_food_type VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci)
 BEGIN
   SELECT product_id, name, price, animal, food_type, special, taste, size
   FROM products
@@ -42,8 +47,8 @@ END$$
 -- REGISTRIERUNG: User und Warenkorb zusammen anlegen (alles oder nichts).
 -- Das Passwort kommt bereits gehasht (wie in register.php mit password_hash()).
 -- Beispiel: CALL sp_benutzer_registrieren('Test', 'test@beispiel.ch', '$2y$10$...', @neue_id); SELECT @neue_id;
-CREATE PROCEDURE sp_benutzer_registrieren(
-  IN p_name VARCHAR(100), IN p_email VARCHAR(255), IN p_password_hash VARCHAR(255),
+CREATE PROCEDURE tierfutter_shop.sp_benutzer_registrieren(
+  IN p_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_email VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_password_hash VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   OUT p_user_id INT UNSIGNED)
 BEGIN
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -61,14 +66,14 @@ END$$
 
 -- LOGIN-PROTOKOLL: erfolgreichen Login speichern (wie log_in() in config.php).
 -- Beispiel: CALL sp_login_protokollieren(1, '127.0.0.1');
-CREATE PROCEDURE sp_login_protokollieren(IN p_user_id INT UNSIGNED, IN p_ip VARCHAR(45))
+CREATE PROCEDURE tierfutter_shop.sp_login_protokollieren(IN p_user_id INT UNSIGNED, IN p_ip VARCHAR(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci)
 BEGIN
   INSERT INTO login_log (user_id, ip_address) VALUES (p_user_id, p_ip);
 END$$
 
 -- WARENKORB ANZEIGEN: Positionen mit Preis und Zwischensumme eines Users.
 -- Beispiel: CALL sp_warenkorb_anzeigen(1);
-CREATE PROCEDURE sp_warenkorb_anzeigen(IN p_user_id INT UNSIGNED)
+CREATE PROCEDURE tierfutter_shop.sp_warenkorb_anzeigen(IN p_user_id INT UNSIGNED)
 BEGIN
   SELECT p.product_id, p.name, p.price, ci.quantity, p.price * ci.quantity AS zwischensumme
   FROM carts c
@@ -80,7 +85,7 @@ END$$
 
 -- WARENKORB: Produkt hinzufügen. Ist es schon drin, wird die Menge erhöht (höchstens 99).
 -- Beispiel: CALL sp_warenkorb_hinzufuegen(1, 3, 2);
-CREATE PROCEDURE sp_warenkorb_hinzufuegen(
+CREATE PROCEDURE tierfutter_shop.sp_warenkorb_hinzufuegen(
   IN p_user_id INT UNSIGNED, IN p_product_id INT UNSIGNED, IN p_quantity INT)
 BEGIN
   DECLARE v_cart_id INT UNSIGNED;
@@ -101,7 +106,7 @@ END$$
 
 -- WARENKORB: Produkt entfernen.
 -- Beispiel: CALL sp_warenkorb_entfernen(1, 3);
-CREATE PROCEDURE sp_warenkorb_entfernen(IN p_user_id INT UNSIGNED, IN p_product_id INT UNSIGNED)
+CREATE PROCEDURE tierfutter_shop.sp_warenkorb_entfernen(IN p_user_id INT UNSIGNED, IN p_product_id INT UNSIGNED)
 BEGIN
   DELETE ci FROM cart_items ci
   JOIN carts c ON c.cart_id = ci.cart_id
@@ -115,11 +120,11 @@ END$$
 --   CALL sp_bestellung_aufgeben(1, 'Max', 'Muster', 'max@beispiel.ch', '079 123 45 67',
 --     'Hauptstrasse 1', '8213', 'Neunkirch', 'Rechnung', @bestellung);
 --   SELECT @bestellung;
-CREATE PROCEDURE sp_bestellung_aufgeben(
+CREATE PROCEDURE tierfutter_shop.sp_bestellung_aufgeben(
   IN p_user_id INT UNSIGNED,
-  IN p_first_name VARCHAR(50), IN p_last_name VARCHAR(50), IN p_email VARCHAR(255),
-  IN p_phone VARCHAR(30), IN p_street VARCHAR(100), IN p_zip CHAR(4), IN p_city VARCHAR(50),
-  IN p_payment_method VARCHAR(20),
+  IN p_first_name VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_last_name VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_email VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  IN p_phone VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_street VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_zip CHAR(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, IN p_city VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  IN p_payment_method VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   OUT p_order_id INT UNSIGNED)
 BEGIN
   DECLARE v_total DECIMAL(8, 2);
@@ -167,7 +172,7 @@ END$$
 
 -- MEINE BESTELLUNGEN: alle Bestellungen eines Users mit Positionen, neueste zuerst.
 -- Beispiel: CALL sp_bestellungen_anzeigen(1);
-CREATE PROCEDURE sp_bestellungen_anzeigen(IN p_user_id INT UNSIGNED)
+CREATE PROCEDURE tierfutter_shop.sp_bestellungen_anzeigen(IN p_user_id INT UNSIGNED)
 BEGIN
   SELECT o.order_id, o.ordered_at, o.total, o.payment_method,
          oi.product_name, oi.quantity, oi.unit_price
@@ -180,7 +185,7 @@ END$$
 -- ERNÄHRUNGSPLAN: Schritte und passende Produkte für eine Krankheit und ein Tier.
 -- Gibt zwei Ergebnisse zurück: zuerst die Schritte, dann die Produkte.
 -- Beispiel: CALL sp_ernaehrungsplan(1, 'Hund');
-CREATE PROCEDURE sp_ernaehrungsplan(IN p_condition_id INT UNSIGNED, IN p_animal VARCHAR(30))
+CREATE PROCEDURE tierfutter_shop.sp_ernaehrungsplan(IN p_condition_id INT UNSIGNED, IN p_animal VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci)
 BEGIN
   SELECT c.name AS krankheit, s.label, s.text
   FROM conditions c
@@ -197,7 +202,7 @@ END$$
 
 -- AUSWERTUNG: verkaufte Menge und Umsatz pro Produkt (für den Admin).
 -- Beispiel: CALL sp_umsatz_pro_produkt();
-CREATE PROCEDURE sp_umsatz_pro_produkt()
+CREATE PROCEDURE tierfutter_shop.sp_umsatz_pro_produkt()
 BEGIN
   SELECT oi.product_id, oi.product_name,
          SUM(oi.quantity) AS verkaufte_menge,
