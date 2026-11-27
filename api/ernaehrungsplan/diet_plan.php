@@ -11,7 +11,9 @@ const PLAN_ANIMALS = ['Hund', 'Katze']; // gleich wie chk_plan_steps_animal
 
 // Ohne Auswahl: nur die Liste für die Kacheln
 if (!isset($_GET['condition_ids'])) {
-  $rows = $pdo->query('SELECT condition_id, name, icon, goal FROM conditions ORDER BY sort_order, name')->fetchAll();
+  $rows = USE_PROCEDURES
+    ? db_call($pdo, 'sp_krankheiten_liste()')[0] ?? []
+    : $pdo->query('SELECT condition_id, name, icon, goal FROM conditions ORDER BY sort_order, name')->fetchAll();
   foreach ($rows as &$row) {
     $row['condition_id'] = (int) $row['condition_id'];
   }
@@ -33,6 +35,39 @@ $animal = $_GET['animal'] ?? '';
 if (!$ids || count($ids) > 10 || !in_array($animal, PLAN_ANIMALS, true)) {
   json_response(['error' => 'Bitte Tier und mindestens eine Krankheit auswählen.'], 400);
 }
+
+// MIT STORED PROCEDURES: Liste der Krankheiten, dann pro Krankheit sp_ernaehrungsplan
+// (Ergebnis 1 = Schritte, Ergebnis 2 = Produkte), zum Schluss die Kombinationshinweise.
+if (USE_PROCEDURES) {
+  $conditions = [];
+  foreach (db_call($pdo, 'sp_krankheiten_liste()')[0] ?? [] as $row) {
+    $id = (int) $row['condition_id'];
+    if (!in_array($id, $ids, true)) continue;
+    $conditions[$id] = $row + ['steps' => [], 'product_ids' => []];
+    $conditions[$id]['condition_id'] = $id;
+  }
+  if (count($conditions) !== count($ids)) {
+    json_response(['error' => 'Diese Kategorie gibt es nicht.'], 404);
+  }
+  foreach ($conditions as $id => &$condition) {
+    [$steps, $products] = db_call($pdo, 'sp_ernaehrungsplan(?, ?)', [$id, $animal]) + [[], []];
+    foreach ($steps as $row) {
+      $condition['steps'][] = ['label' => $row['label'], 'text' => $row['text']];
+    }
+    foreach ($products as $row) {
+      $condition['product_ids'][] = (int) $row['product_id'];
+    }
+  }
+  unset($condition);
+  $rows = db_call($pdo, 'sp_kombinationshinweise(?)', [implode(',', $ids)])[0] ?? [];
+  json_response(['plan' => [
+    'animal' => $animal,
+    'conditions' => array_values($conditions),
+    'notes' => array_map(fn($r) => ['names' => [$r['name_a'], $r['name_b']], 'note' => $r['note']], $rows),
+  ]]);
+}
+
+// OHNE STORED PROCEDURES
 $in = implode(',', array_fill(0, count($ids), '?'));
 
 $stmt = $pdo->prepare("SELECT condition_id, name, icon, goal FROM conditions WHERE condition_id IN ($in) ORDER BY sort_order, name");

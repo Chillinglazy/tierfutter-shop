@@ -17,9 +17,7 @@ if (($data['action'] ?? '') === 'logout') {
 $email = strtolower(trim((string) ($data['email'] ?? '')));
 $password = (string) ($data['password'] ?? '');
 
-$stmt = $pdo->prepare('SELECT user_id, name, password_hash FROM users WHERE email = ?');
-$stmt->execute([$email]);
-$user = $stmt->fetch();
+$user = find_user($pdo, $email);
 
 // Auch ohne User einen Hash prüfen, damit die Antwortzeit nichts verrät.
 $hash = $user['password_hash'] ?? '$2y$10$sF.RRinyNcEd.JIu7Q9UjuQjQC6WoWjg1zK82ZKtfGpc7kzGo6QwS';

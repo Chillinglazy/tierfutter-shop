@@ -30,6 +30,29 @@ $pdo = new PDO(
   ]
 );
 
+// STORED PROCEDURES: Mit DB_PROCEDURES = true in config.local.php ruft die Website
+// alle Abläufe mit CALL auf (database/procedures.sql muss importiert sein, z. B. bei alwaysdata).
+// Fehlt die Einstellung (InfinityFree erlaubt keine Prozeduren), gelten die SQL-Befehle in PHP.
+define('USE_PROCEDURES', defined('DB_PROCEDURES') && DB_PROCEDURES === true);
+
+// Prozedur aufrufen, z. B. db_call($pdo, 'sp_warenkorb_anzeigen(?)', [$userId]).
+// Gibt alle Ergebnisse (Result Sets) als Liste zurück: [0] = erstes Ergebnis usw.
+function db_call(PDO $pdo, string $call, array $params = []): array {
+  $stmt = $pdo->prepare('CALL ' . $call);
+  $stmt->execute($params);
+  $sets = [];
+  do {
+    if ($stmt->columnCount() > 0) $sets[] = $stmt->fetchAll();
+  } while ($stmt->nextRowset());
+  $stmt->closeCursor();
+  return $sets;
+}
+
+// OUT-Parameter einer Prozedur lesen, z. B. db_var($pdo, '@user_id').
+function db_var(PDO $pdo, string $name): mixed {
+  return $pdo->query('SELECT ' . $name)->fetchColumn();
+}
+
 // SESSION: Cookie nur für diese Seite, nicht per JavaScript lesbar.
 session_set_cookie_params([
   'httponly' => true,
@@ -73,6 +96,11 @@ function log_in(PDO $pdo, int $userId, string $name, string $email): void {
   $_SESSION['name'] = $name;
   $_SESSION['email'] = $email; // zum Vorausfüllen des Bestellformulars
 
+  if (USE_PROCEDURES) {
+    db_call($pdo, 'sp_login_protokollieren(?, ?)', [$userId, $_SERVER['REMOTE_ADDR'] ?? null]);
+    return;
+  }
+
   // Jeder User hat genau einen Warenkorb (falls er noch fehlt, jetzt anlegen).
   $pdo->prepare('INSERT IGNORE INTO carts (user_id) VALUES (?)')->execute([$userId]);
 
@@ -80,10 +108,24 @@ function log_in(PDO $pdo, int $userId, string $name, string $email): void {
     ->execute([$userId, $_SERVER['REMOTE_ADDR'] ?? null]);
 }
 
+// USER zur E-Mail suchen (Login, Admin-Login, Registrierung). false = nicht gefunden.
+function find_user(PDO $pdo, string $email): array|false {
+  if (USE_PROCEDURES) {
+    return (db_call($pdo, 'sp_benutzer_suchen(?)', [$email])[0] ?? [])[0] ?? false;
+  }
+  $stmt = $pdo->prepare('SELECT user_id, name, password_hash FROM users WHERE email = ?');
+  $stmt->execute([$email]);
+  return $stmt->fetch();
+}
+
 // ADMIN: Rolle bei jeder Anfrage frisch aus der Datenbank lesen (Änderungen gelten sofort).
 // Fehlt die Spalte role noch (update_admin.sql nicht importiert), ist niemand Admin.
 function user_is_admin(PDO $pdo, int $userId): bool {
   try {
+    if (USE_PROCEDURES) {
+      $rows = db_call($pdo, 'sp_benutzer_rolle(?)', [$userId])[0] ?? [];
+      return ($rows[0]['role'] ?? '') === 'admin';
+    }
     $stmt = $pdo->prepare('SELECT role FROM users WHERE user_id = ?');
     $stmt->execute([$userId]);
     return $stmt->fetchColumn() === 'admin';

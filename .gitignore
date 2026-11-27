@@ -31,3 +31,6 @@ EER-Diagramm.png
 
 # Upload-Paket für das Hosting (enthält echte Zugangsdaten)
 online-upload/
+
+# Upload-Paket für alwaysdata (config.local.php mit echten Zugangsdaten)
+online-upload-alwaysdata/

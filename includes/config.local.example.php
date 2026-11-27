@@ -9,3 +9,8 @@ const DB_HOST = 'localhost';
 const DB_NAME = 'tierfutter_shop';
 const DB_USER = 'root'; // XAMPP-Standard
 const DB_PASS = '';     // XAMPP-Standard: kein Passwort
+
+// STORED PROCEDURES: true = die Website ruft database/procedures.sql mit CALL auf.
+// Nur einschalten, wenn der Anbieter Prozeduren erlaubt (alwaysdata: ja, InfinityFree: nein)
+// und procedures.sql (online: procedures-online.sql) importiert ist.
+const DB_PROCEDURES = false;

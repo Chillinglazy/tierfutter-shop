@@ -12,6 +12,23 @@ const MAX_SAVED_PLANS = 20;
 
 $userId = require_login();
 
+// Gespeicherte Pläne des Users (eine Zeile pro Plan und Krankheit), neueste zuerst
+function plan_rows(PDO $pdo, int $userId): array {
+  if (USE_PROCEDURES) {
+    return db_call($pdo, 'sp_plaene_anzeigen(?)', [$userId])[0] ?? [];
+  }
+  $stmt = $pdo->prepare(
+    'SELECT sp.plan_id, sp.animal, sp.pet_name, sp.created_at, c.condition_id, c.name, c.icon
+     FROM saved_plans sp
+     JOIN saved_plan_conditions spc ON spc.plan_id = sp.plan_id
+     JOIN conditions c ON c.condition_id = spc.condition_id
+     WHERE sp.user_id = ?
+     ORDER BY sp.created_at DESC, sp.plan_id DESC, c.sort_order'
+  );
+  $stmt->execute([$userId]);
+  return $stmt->fetchAll();
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
   $data = read_json_post();
   $action = $data['action'] ?? '';
@@ -35,52 +52,59 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     if (mb_strlen($petName) > 40) {
       json_response(['error' => 'Der Name des Tiers darf höchstens 40 Zeichen haben.'], 400);
     }
-    $in = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM conditions WHERE condition_id IN ($in)");
-    $stmt->execute($ids);
-    if ((int) $stmt->fetchColumn() !== count($ids)) {
+    if (USE_PROCEDURES) {
+      $known = array_map(fn($r) => (int) $r['condition_id'], db_call($pdo, 'sp_krankheiten_liste()')[0] ?? []);
+      $found = count(array_intersect($ids, $known));
+      $planCount = count(array_unique(array_column(plan_rows($pdo, $userId), 'plan_id')));
+    } else {
+      $in = implode(',', array_fill(0, count($ids), '?'));
+      $stmt = $pdo->prepare("SELECT COUNT(*) FROM conditions WHERE condition_id IN ($in)");
+      $stmt->execute($ids);
+      $found = (int) $stmt->fetchColumn();
+      $stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_plans WHERE user_id = ?');
+      $stmt->execute([$userId]);
+      $planCount = (int) $stmt->fetchColumn();
+    }
+    if ($found !== count($ids)) {
       json_response(['error' => 'Diese Kategorie gibt es nicht.'], 404);
     }
-    $stmt = $pdo->prepare('SELECT COUNT(*) FROM saved_plans WHERE user_id = ?');
-    $stmt->execute([$userId]);
-    if ($stmt->fetchColumn() >= MAX_SAVED_PLANS) {
+    if ($planCount >= MAX_SAVED_PLANS) {
       json_response(['error' => 'Du kannst höchstens ' . MAX_SAVED_PLANS . ' Pläne speichern. Lösche zuerst einen alten Plan.'], 400);
     }
 
     // Plan und seine Krankheiten zusammen speichern
-    $pdo->beginTransaction();
-    $pdo->prepare('INSERT INTO saved_plans (user_id, animal, pet_name) VALUES (?, ?, ?)')
-      ->execute([$userId, $animal, $petName === '' ? null : $petName]);
-    $planId = (int) $pdo->lastInsertId();
-    $insert = $pdo->prepare('INSERT INTO saved_plan_conditions (plan_id, condition_id) VALUES (?, ?)');
-    foreach ($ids as $id) {
-      $insert->execute([$planId, $id]);
+    if (USE_PROCEDURES) {
+      db_call($pdo, 'sp_plan_speichern(?, ?, ?, ?, @plan_id)', [$userId, $animal, $petName, implode(',', $ids)]);
+    } else {
+      $pdo->beginTransaction();
+      $pdo->prepare('INSERT INTO saved_plans (user_id, animal, pet_name) VALUES (?, ?, ?)')
+        ->execute([$userId, $animal, $petName === '' ? null : $petName]);
+      $planId = (int) $pdo->lastInsertId();
+      $insert = $pdo->prepare('INSERT INTO saved_plan_conditions (plan_id, condition_id) VALUES (?, ?)');
+      foreach ($ids as $id) {
+        $insert->execute([$planId, $id]);
+      }
+      $pdo->commit();
     }
-    $pdo->commit();
   } elseif ($action === 'delete') {
     $planId = filter_var($data['plan_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
     if ($planId === false) {
       json_response(['error' => 'Ungültiger Plan.'], 400);
     }
     // Nur eigene Pläne löschen (user_id aus der Session); Krankheiten werden per CASCADE mitgelöscht
-    $pdo->prepare('DELETE FROM saved_plans WHERE plan_id = ? AND user_id = ?')->execute([$planId, $userId]);
+    if (USE_PROCEDURES) {
+      db_call($pdo, 'sp_plan_loeschen(?, ?)', [$planId, $userId]);
+    } else {
+      $pdo->prepare('DELETE FROM saved_plans WHERE plan_id = ? AND user_id = ?')->execute([$planId, $userId]);
+    }
   } else {
     json_response(['error' => 'Unbekannte Aktion.'], 400);
   }
 }
 
 // LISTE: neueste zuerst, Krankheiten pro Plan gruppiert
-$stmt = $pdo->prepare(
-  'SELECT sp.plan_id, sp.animal, sp.pet_name, sp.created_at, c.condition_id, c.name, c.icon
-   FROM saved_plans sp
-   JOIN saved_plan_conditions spc ON spc.plan_id = sp.plan_id
-   JOIN conditions c ON c.condition_id = spc.condition_id
-   WHERE sp.user_id = ?
-   ORDER BY sp.created_at DESC, sp.plan_id DESC, c.sort_order'
-);
-$stmt->execute([$userId]);
 $plans = [];
-foreach ($stmt->fetchAll() as $row) {
+foreach (plan_rows($pdo, $userId) as $row) {
   $id = (int) $row['plan_id'];
   $plans[$id] ??= [
     'plan_id' => $id,

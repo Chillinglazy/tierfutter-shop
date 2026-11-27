@@ -17,6 +17,17 @@ function text_field(array $data, string $key): string {
   return trim((string) ($data[$key] ?? ''));
 }
 
+// Gast-Positionen aus der Anfrage: {product_id: menge}, ungültige Einträge weglassen
+function guest_items(array $data): array {
+  $items = [];
+  foreach (is_array($data['items'] ?? null) ? $data['items'] : [] as $id => $qty) {
+    $productId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    $quantity = filter_var($qty, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => MAX_QUANTITY]]);
+    if ($productId !== false && $quantity !== false) $items[$productId] = $quantity;
+  }
+  return $items;
+}
+
 $order = [
   'first_name' => text_field($data, 'first_name'),
   'last_name' => text_field($data, 'last_name'),
@@ -48,6 +59,53 @@ if ($errors) {
   json_response(['error' => implode(' ', $errors)], 422);
 }
 
+// MIT STORED PROCEDURES (database/procedures.sql)
+// Eingeloggt: sp_bestellung_aufgeben macht alles in einer eigenen Transaktion
+// (Warenkorb sperren, Bestellung + Positionen speichern, Warenkorb leeren).
+// Gast: Kopf, Positionen und Total mit drei Prozeduren in einer Transaktion von PHP.
+if (USE_PROCEDURES) {
+  $orderParams = array_values($order);
+  if ($userId) {
+    try {
+      db_call($pdo, 'sp_bestellung_aufgeben(?, ?, ?, ?, ?, ?, ?, ?, ?, @order_id)', [$userId, ...$orderParams]);
+    } catch (PDOException $e) {
+      if ($e->getCode() === '45000') json_response(['error' => 'Dein Warenkorb ist leer.'], 422); // SIGNAL der Prozedur
+      throw $e;
+    }
+    $orderId = (int) db_var($pdo, '@order_id');
+    $total = (float) db_call($pdo, 'sp_bestellung_total_berechnen(?)', [$orderId])[0][0]['total'];
+  } else {
+    $items = guest_items($data);
+    if (!$items) json_response(['error' => 'Dein Warenkorb ist leer.'], 422);
+    $pdo->beginTransaction();
+    try {
+      db_call($pdo, 'sp_gastbestellung_anlegen(?, ?, ?, ?, ?, ?, ?, ?, @order_id)', $orderParams);
+      $orderId = (int) db_var($pdo, '@order_id');
+      foreach ($items as $productId => $quantity) {
+        db_call($pdo, 'sp_bestellposition_hinzufuegen(?, ?, ?)', [$orderId, $productId, $quantity]);
+      }
+      $result = db_call($pdo, 'sp_bestellung_total_berechnen(?)', [$orderId])[0][0];
+      if ((int) $result['positionen'] === 0) {
+        // Keines der Produkte gibt es (mehr): nichts speichern
+        $pdo->rollBack();
+        json_response(['error' => 'Dein Warenkorb ist leer.'], 422);
+      }
+      $pdo->commit();
+    } catch (Throwable $e) {
+      if ($pdo->inTransaction()) $pdo->rollBack();
+      throw $e;
+    }
+    $total = (float) $result['total'];
+  }
+
+  // Newsletter nur mit ausdrücklicher Zustimmung. Schon angemeldet: nichts tun.
+  if (($data['newsletter'] ?? false) === true) {
+    db_call($pdo, 'sp_newsletter_anmelden(?)', [$order['email']]);
+  }
+  json_response(['order_id' => $orderId, 'total' => $total], 201);
+}
+
+// OHNE STORED PROCEDURES (z. B. InfinityFree)
 // Ab hier alles in einer Transaktion: Warenkorb lesen, Bestellung speichern,
 // Warenkorb leeren, Newsletter. Geht etwas schief, wird nichts gespeichert.
 $pdo->beginTransaction();
@@ -63,12 +121,8 @@ if ($userId) {
   );
   $stmt->execute([$userId]);
   $items = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-} elseif (is_array($data['items'] ?? null)) {
-  foreach ($data['items'] as $id => $qty) {
-    $productId = filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    $quantity = filter_var($qty, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => MAX_QUANTITY]]);
-    if ($productId !== false && $quantity !== false) $items[$productId] = $quantity;
-  }
+} else {
+  $items = guest_items($data);
 }
 
 // Aktuelle Namen und Preise aus der Datenbank holen

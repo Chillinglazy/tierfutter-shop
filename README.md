@@ -179,6 +179,34 @@ Das lokale Upload-Paket (Ordner `online-upload/`: `htdocs/`, ZIP,
 `datenbank-import.sql`, `ANLEITUNG.md`) ist in `.gitignore` eingetragen,
 weil seine `config.local.php` das echte Passwort enthält.
 
+## Online stellen mit Stored Procedures (alwaysdata)
+
+InfinityFree erlaubt keine Stored Procedures. Bei **alwaysdata** (Gratis-Plan
+„Free“: 1 GB Speicher, ohne Werbung, PHP und MariaDB) darf man eigene
+Prozeduren anlegen. Dort ruft die Website die Abläufe mit `CALL` auf.
+
+**Schalter statt zweiter Code-Version:** In `includes/config.local.php` steht
+`const DB_PROCEDURES = true;`. Dann rufen die PHP-Dateien die Prozeduren aus
+`database/procedures.sql` auf (`db_call()` in `includes/config.php`). Fehlt die
+Zeile (wie auf InfinityFree) oder steht `false`, arbeiten dieselben Dateien wie
+bisher mit Prepared Statements. So bleibt die InfinityFree-Seite unverändert
+lauffähig, und beide Anbieter bekommen exakt denselben Code.
+Nur `api/admin/admin_db.php` (Datenbankverwaltung) arbeitet immer mit normalem
+SQL, weil Tabellen und Spalten dort erst zur Laufzeit feststehen.
+
+Ablauf in Kurzform (ausführlich in `ANLEITUNG.md` im Upload-Paket
+`online-upload-alwaysdata/`):
+
+1. Konto auf alwaysdata.com (Plan *Free*), Website `<konto>.alwaysdata.net`.
+2. Im Panel *Datenbanken → MySQL* eine Datenbank `<konto>_shop` anlegen.
+3. In phpMyAdmin (https://phpmyadmin.alwaysdata.com) die Datenbank wählen und
+   nacheinander importieren: `1_datenbank-import.sql` (= `schema.sql` ohne
+   `CREATE DATABASE`/`USE`), dann `2_procedures-online.sql` (=
+   `procedures.sql` ohne den festen Datenbanknamen `tierfutter_shop.`).
+4. Dateien per FTP (FileZilla) in den Ordner `www/` hochladen.
+5. `www/includes/config.local.php` mit Host `mysql-<konto>.alwaysdata.net`,
+   Datenbank, Benutzer, Passwort und `DB_PROCEDURES = true` hochladen.
+
 ### Fehlersuche
 
 Der Shop zeigt Fehlerdetails absichtlich nicht im Browser. Am schnellsten
@@ -193,6 +221,7 @@ grenzt man einen Fehler ein, indem man die API direkt aufruft:
 | `{"products":[]}` | Import in eine andere Datenbank | Richtige Datenbank anklicken, Import wiederholen |
 | Umlaute kaputt (`Ã¼`) | Import ohne UTF-8 | Import mit `SET NAMES utf8mb4;` wiederholen |
 | Symbole im Ernährungsplan als `?` oder `??` | Datenbank wurde mit Zeichensatz `latin1` angelegt (Standard bei InfinityFree). Die Tabellen bekamen diesen Zeichensatz, Emojis lassen sich darin nicht speichern. **So war es beim zweiten Upload.** | Online-Variante von `database/update_utf8mb4.sql` (ohne `USE`) importieren. Seitdem legt `schema.sql` jede Tabelle ausdrücklich mit `utf8mb4` an. |
+| alwaysdata: `Serverfehler`, obwohl die Zugangsdaten stimmen | `2_procedures-online.sql` fehlt (PROCEDURE … does not exist) | `2_procedures-online.sql` in die richtige Datenbank importieren oder vorübergehend `DB_PROCEDURES = false` setzen |
 | Produkte als JSON, Seite trotzdem leer | Alte Dateien im Browser-Cache | **Strg + F5** |
 | Neue Knöpfe/Änderungen fehlen nach dem Upload (z. B. *⚙ Admin*) | Browser zeigt die alte `index.html` aus dem Cache | **Strg + F5** oder Inkognito-Fenster. Seit dem 20.11.2026 sagt `.htaccess` dem Browser, HTML-Seiten nicht zwischenzuspeichern. |
 
@@ -260,7 +289,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `database/update_ernaehrungsplan.sql` | Nur die Ernährungsplan-Tabellen, gespeicherte Pläne und Diät-Produkte (für eine bestehende Datenbank) |
 | `database/update_admin.sql` | Nur die Spalte `users.role` für die Admin-Rolle (für eine bestehende Datenbank) |
 | `database/update_utf8mb4.sql` | Stellt alle Tabellen auf `utf8mb4` um und trägt die Symbole der Krankheiten neu ein (wenn sie als `?` erscheinen) |
-| `database/procedures.sql` | 10 Stored Procedures für die wichtigsten Abläufe (Produkte filtern, Registrieren, Login-Protokoll, Warenkorb, Bestellen, Meine Bestellungen, Ernährungsplan, Umsatz pro Produkt), zum Ausprobieren in MySQL Workbench |
+| `database/procedures.sql` | 24 Stored Procedures (Produkte, Registrieren, Login, Warenkorb, Bestellen auch als Gast, Meine Bestellungen, Ernährungsplan, Meine Pläne, Umsatz pro Produkt); in Workbench zum Ausprobieren, bei alwaysdata ruft die Website sie auf (`DB_PROCEDURES = true`) |
 | `.gitignore` | Dateien, die nicht in Git gespeichert werden (z. B. `config.local.php`) |
 | `Tierfutter-Shop.code-workspace` | VS-Code-Arbeitsbereich (Einrückung 2 Leerzeichen) |
 
@@ -655,8 +684,10 @@ Antwort: `{"items": {"1": 2, "3": 1}}` (Produkt-ID → Menge) oder
 
 ## Stored Procedures
 
-`database/procedures.sql` legt 10 gespeicherte Prozeduren an. Sie machen
-dasselbe wie die PHP-Dateien, laufen aber direkt in der Datenbank.
+`database/procedures.sql` legt 24 gespeicherte Prozeduren an. Sie machen
+dasselbe wie die PHP-Dateien, laufen aber direkt in der Datenbank. Die ersten
+10 sind die wichtigsten Abläufe zum Zeigen, die weiteren 14 braucht die
+Website zusätzlich, wenn sie mit `DB_PROCEDURES = true` läuft (alwaysdata).
 MySQL Workbench: Datei öffnen, Blitz-Symbol, danach z. B.:
 
 ```sql
@@ -682,12 +713,28 @@ CALL sp_umsatz_pro_produkt();
 | `sp_bestellungen_anzeigen(user_id)` | Meine Bestellungen |
 | `sp_ernaehrungsplan(condition_id, tier)` | Schritte und passende Produkte |
 | `sp_umsatz_pro_produkt()` | Verkaufte Menge und Umsatz pro Produkt |
+| `sp_benutzer_suchen(email)` | User für Login und Registrierung |
+| `sp_passwort_aendern(user_id, hash)` | Neuen Passwort-Hash speichern |
+| `sp_benutzer_rolle(user_id)` | Rolle `kunde`/`admin` |
+| `sp_warenkorb_id(user_id)` | Nummer des Warenkorbs |
+| `sp_warenkorb_menge_aendern(user_id, product_id, delta)` | Menge ändern, bei 0 entfernen |
+| `sp_gastbestellung_anlegen(…, OUT order_id)` | Bestellung eines Gasts (ohne User) |
+| `sp_bestellposition_hinzufuegen(order_id, product_id, menge)` | Position mit aktuellem Namen und Preis |
+| `sp_bestellung_total_berechnen(order_id)` | Total aus den Positionen rechnen |
+| `sp_newsletter_anmelden(email)` | Newsletter-Anmeldung |
+| `sp_krankheiten_liste()` | Krankheiten für den Ernährungsplan |
+| `sp_kombinationshinweise('1,4')` | Hinweise zu mehreren Krankheiten |
+| `sp_plan_speichern(user_id, tier, name, '1,4', OUT plan_id)` | Plan speichern |
+| `sp_plan_loeschen(plan_id, user_id)` | Eigenen Plan löschen |
+| `sp_plaene_anzeigen(user_id)` | Meine Pläne |
 
 Fehler meldet eine Prozedur mit `SIGNAL` (z. B. „Der Warenkorb ist leer.“),
 Transaktionen werden bei einem Fehler mit `ROLLBACK` zurückgesetzt.
-Die Website ruft die Prozeduren **nicht** auf: InfinityFree erlaubt auf dem
-Gratis-Hosting keine Stored Procedures. `procedures.sql` deshalb nur lokal
-in Workbench ausführen, nicht im phpMyAdmin von InfinityFree.
+Ob die Website die Prozeduren aufruft, entscheidet `DB_PROCEDURES` in
+`includes/config.local.php` (siehe *Online stellen mit Stored Procedures*).
+InfinityFree erlaubt keine Stored Procedures: dort `procedures.sql` nicht
+importieren und `DB_PROCEDURES` weglassen. Getestet mit MySQL 8 (Workbench)
+und MariaDB 10.11.
 
 ## Entscheidungen im Projektverlauf
 
@@ -706,6 +753,7 @@ aufgebaut ist:
 | Ordnerstruktur | Dateien nach Aufgabe sortiert (`api/`, `includes/`, `database/` …), nicht öffentliche Ordner gesperrt | Übersicht und Sicherheit |
 | API-Unterordner (2026-11-27) | Die 12 PHP-Dateien in `api/` nach Thema aufgeteilt: `konto/`, `shop/`, `ernaehrungsplan/`, `admin/` | Man findet eine Datei schneller und sieht sofort, wozu sie gehört |
 | Stored Procedures (2026-11-27) | Abläufe zusätzlich als Prozeduren in `database/procedures.sql`; PHP ruft sie nicht auf, sondern nutzt weiter Prepared Statements | InfinityFree erlaubt auf dem Gratis-Hosting keine Stored Procedures, die Live-Seite muss trotzdem laufen |
+| Umzug zu alwaysdata (2026-11-27) | Schalter `DB_PROCEDURES` in `config.local.php`: `true` = PHP ruft die Prozeduren mit `CALL` auf, sonst Prepared Statements wie bisher. Kein eigener Branch. | alwaysdata erlaubt Prozeduren. Mit dem Schalter läuft derselbe Code bei beiden Anbietern, InfinityFree muss nichts ändern, und Fehler müssen nicht in zwei Versionen behoben werden. |
 | Ernährungsplan | Pläne in der Datenbank (`conditions`, `plan_steps`), Produkte über `product_conditions` verknüpft, neuer Wert `Diät` im Spezialfutter-Filter | Pläne und Zuordnungen lassen sich in phpMyAdmin ändern, ohne Code anzupassen. Unterschiede zwischen Hund und Katze (z. B. Diabetes) über `plan_steps.animal`. |
 | Ernährungsplan für Kunden | Bereich nach oben verschoben, Auswahl mit Kacheln statt Dropdowns, Pläne im Konto speicherbar | Kunden sollen den Plan selbst finden, übersichtlich auswählen und später wieder öffnen können |
 | Mehrere Krankheiten | Mehrfachauswahl, pro Krankheit ein Abschnitt, empfohlene Produkte in einem gemeinsamen Bereich (ohne Doppelte, mit "Passt zu"), Hinweise zu Kombinationen in `combination_notes`, gespeicherte Pläne über `saved_plan_conditions` (N : M) | Ein Tier kann mehrere Krankheiten haben. Ein automatisch gemischter Plan wäre medizinisch nicht sicher, darum entscheidet die Tierarztpraxis, was Vorrang hat. |
