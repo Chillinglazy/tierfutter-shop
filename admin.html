@@ -8,8 +8,8 @@
    Datenbankverwaltung · Tierfutter-Shop
   </title>
   <link href="css/style.css?v=6" rel="stylesheet"/>
-  <link href="css/admin.css?v=2" rel="stylesheet"/>
-  <script defer="" src="js/admin.js?v=3">
+  <link href="css/admin.css?v=3" rel="stylesheet"/>
+  <script defer="" src="js/admin.js?v=5">
   </script>
  </head>
  <body>
@@ -67,6 +67,9 @@
   <main class="admin" hidden="" id="adminMain">
    <!-- TABELLENLISTE -->
    <aside class="admin-side">
+    <button class="btn sql-open" id="sqlOpen" onclick="openSqlEditor()" type="button">
+     ▶ SQL-Editor (CALL)
+    </button>
     <h2>
      Tabellen
     </h2>
@@ -88,6 +91,61 @@
       neue Tabellen anlegen und Spalten ergänzen. Die Tabellen des Shops (mit 🔒) können
       nicht gelöscht werden, ihre Spalten auch nicht.
      </p>
+    </div>
+    <!-- SQL-EDITOR: Stored Procedures mit CALL aufrufen (api/admin/sql_editor.php) -->
+    <div hidden="" id="sqlView">
+     <h1>
+      SQL-Editor
+     </h1>
+     <p>
+      Hier rufst du die Stored Procedures der Datenbank mit
+      <code>CALL</code>
+      auf. Erlaubt ist genau ein Befehl der Form
+      <code>CALL sp_name(Wert, …);</code>
+      – Zahlen, Text in
+      <code>'…'</code>
+      , NULL oder Variablen wie
+      <code>@user_id</code>
+      für OUT-Parameter. Prozeduren, die Daten ändern, wirken sofort.
+     </p>
+     <p class="sql-mode" hidden="" id="sqlMode">
+     </p>
+     <div class="sql-grid">
+      <div class="sql-editor">
+       <label for="sqlInput">
+        SQL-Befehl
+        <small>
+         Ausführen mit Strg + Enter
+        </small>
+       </label>
+       <textarea autocomplete="off" id="sqlInput" maxlength="5000" placeholder="CALL sp_umsatz_pro_produkt();" rows="6" spellcheck="false"></textarea>
+       <div class="admin-buttons">
+        <button class="btn solid" id="sqlRun" type="button">
+         ▶ Ausführen
+        </button>
+        <button class="btn" id="sqlClear" type="button">
+         Leeren
+        </button>
+       </div>
+      </div>
+      <div class="sql-procs">
+       <h2>
+        Prozeduren
+        <small id="sqlProcCount">
+        </small>
+       </h2>
+       <ul id="sqlProcList">
+       </ul>
+      </div>
+     </div>
+     <h2>
+      Ausgabe
+     </h2>
+     <div aria-live="polite" class="sql-output" id="sqlOutput">
+      <p class="sql-hint">
+       Noch nichts ausgeführt. Eine Prozedur aus der Liste anklicken oder einen CALL-Befehl eintippen.
+      </p>
+     </div>
     </div>
     <div hidden="" id="tableView">
      <div class="admin-title">
