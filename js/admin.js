@@ -98,6 +98,8 @@ $('tableList').addEventListener('click', e => {
 async function openTable(name, page) {
   current = await adminApi({ action: 'table', name, page });
   $('welcome').hidden = true;
+  $('sqlView').hidden = true;
+  $('sqlOpen').classList.remove('active');
   $('tableView').hidden = false;
   $('tableName').textContent = (current.core ? '🔒 ' : '') + current.name;
   $('dropTableBtn').hidden = current.core;
@@ -273,6 +275,121 @@ $('dropForm').addEventListener('submit', async e => {
 async function refresh() {
   await openTable(current.name, current.page);
   await loadTables()
+}
+
+// SQL-EDITOR: Stored Procedures mit CALL aufrufen. Spricht nur mit api/admin/sql_editor.php,
+// das genau einen Befehl CALL sp_...(...) annimmt und alle Ergebnisse als Tabellen zurückgibt.
+let procs = []; // [{name, params: [{mode, name, type}]}]
+
+async function sqlApi(data) {
+  let res, json;
+  try {
+    res = await fetch('api/admin/sql_editor.php', data ? {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify(data)
+    } : {});
+    json = await res.json()
+  } catch {
+    throw new Error('Server nicht erreichbar. Bitte Seite neu laden.')
+  }
+  if (res.status === 401) return denied(json.error);
+  if (!res.ok) throw Object.assign(new Error(json.error || 'Unbekannter Fehler.'), { sql: json.sql });
+  return json
+}
+
+async function openSqlEditor() {
+  current = null;
+  $('welcome').hidden = true;
+  $('tableView').hidden = true;
+  $('sqlView').hidden = false;
+  $('sqlOpen').classList.add('active');
+  document.querySelectorAll('#tableList button').forEach(b => b.classList.remove('active'));
+  $('sqlInput').focus();
+  try {
+    const res = await sqlApi();
+    csrf = res.csrf;
+    procs = res.procedures;
+    $('sqlProcCount').textContent = procs.length;
+    $('sqlProcList').innerHTML = procs.map((p, i) => `<li><button type="button" data-proc="${i}" title="In den Editor einfügen"><b>${esc(p.name)}</b><small>(${p.params.map(a => esc((a.mode === 'IN' ? '' : a.mode + ' ') + a.name + ' ' + a.type)).join(', ')})</small></button></li>`).join('') || '<li class="sql-hint">Keine Prozeduren gefunden.</li>';
+    // Hinweis: InfinityFree erlaubt keine Prozeduren, bei alwaysdata muss 2_procedures-online.sql importiert sein.
+    const mode = $('sqlMode');
+    mode.hidden = !!procs.length && res.procedures_mode;
+    mode.className = 'sql-mode' + (procs.length ? '' : ' warn');
+    mode.textContent = !procs.length
+      ? '⚠ In dieser Datenbank gibt es keine Stored Procedures. Auf InfinityFree sind sie nicht erlaubt; bei alwaysdata zuerst 2_procedures-online.sql in phpMyAdmin importieren.'
+      : 'ℹ Die Prozeduren sind vorhanden, die Website selbst nutzt sie aber nicht (DB_PROCEDURES ist in config.local.php nicht auf true). Aufrufen kannst du sie hier trotzdem.'
+  } catch (err) {
+    showSqlError(err.message)
+  }
+}
+
+// Klick auf eine Prozedur: Vorlage mit Beispielwerten einfügen (OUT-Parameter als @variable).
+$('sqlProcList').addEventListener('click', e => {
+  const button = e.target.closest('button[data-proc]');
+  if (!button) return;
+  const p = procs[button.dataset.proc];
+  const args = p.params.map(a => {
+    if (a.mode !== 'IN') return '@' + a.name.replace(/^p_/, '');
+    if (/int|decimal|float|double|numeric/.test(a.type)) return '1';
+    if (/^(date|datetime|timestamp)/.test(a.type)) return "'2026-01-01'";
+    return `'${a.name.replace(/^p_/, '')}'`
+  });
+  const input = $('sqlInput');
+  input.value = `CALL ${p.name}(${args.join(', ')});`;
+  input.focus();
+  // ersten Wert markieren, damit man ihn gleich überschreiben kann
+  const open = input.value.indexOf('(') + 1;
+  const first = args[0] || '';
+  input.setSelectionRange(open, open + first.length)
+});
+
+$('sqlRun').addEventListener('click', runSql);
+$('sqlClear').addEventListener('click', () => {
+  $('sqlInput').value = '';
+  $('sqlInput').focus()
+});
+$('sqlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    runSql()
+  }
+});
+
+async function runSql() {
+  const sql = $('sqlInput').value;
+  if (!sql.trim()) return $('sqlInput').focus();
+  $('sqlRun').disabled = true;
+  $('sqlOutput').innerHTML = '<p class="sql-hint">Wird ausgeführt …</p>';
+  try {
+    const res = await sqlApi({ sql });
+    showSqlResults(res)
+  } catch (err) {
+    showSqlError(err.message, err.sql)
+  } finally {
+    $('sqlRun').disabled = false
+  }
+}
+
+// AUSGABE: jedes Ergebnis (Result Set) als eigene Tabelle, OUT-Variablen zuletzt.
+function showSqlResults(res) {
+  const time = new Date().toLocaleTimeString('de-CH');
+  const sets = res.results.filter(r => !r.variables);
+  let html = `<p class="sql-ok">✔ Ausgeführt um ${time} in ${res.ms} ms · ${sets.length ? sets.length + ' Ergebnis' + (sets.length > 1 ? 'se' : '') : 'kein Ergebnis (Befehl ohne Ausgabe)'}</p>`;
+  html += `<p class="sql-sent">Gesendet: <code>${esc(res.sql)}</code>${res.params.length ? ' mit Werten <code>' + esc(res.params.map(v => v === null ? 'NULL' : JSON.stringify(v)).join(', ')) + '</code>' : ''}</p>`;
+  html += res.results.map((r, i) => {
+    const title = r.variables ? 'OUT-Variablen' : `Ergebnis ${i + 1}`;
+    const info = r.variables ? '' : ` <small>${r.total} Zeile${r.total === 1 ? '' : 'n'}${r.total > r.rows.length ? ` · die ersten ${r.rows.length} angezeigt` : ''}</small>`;
+    const head = '<tr>' + r.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+    const body = r.rows.map(row => '<tr>' + row.map(v => `<td title="${v === null ? '' : esc(v)}">${v === null ? '<i class="null">NULL</i>' : esc(short(v))}</td>`).join('') + '</tr>').join('')
+      || `<tr><td colspan="${r.columns.length}">Keine Zeilen.</td></tr>`;
+    return `<h3>${title}${info}</h3><div class="admin-scroll"><table class="admin-table">${head}${body}</table></div>`
+  }).join('');
+  $('sqlOutput').innerHTML = html
+}
+
+function showSqlError(text, sql) {
+  $('sqlOutput').innerHTML = `<p class="sql-error">✖ ${esc(text)}</p>` + (sql ? `<p class="sql-sent">Gesendet: <code>${esc(sql)}</code></p>` : '')
 }
 
 // START: Zugriff prüfen und Tabellen laden.

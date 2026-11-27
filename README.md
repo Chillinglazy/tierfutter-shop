@@ -61,6 +61,7 @@ Warenkorb und bestellt. Auch nach dem Login bleibt man auf dieser Seite.
 | AGB- und Datenschutz-Seite (Mustertexte) | ✅ fertig |
 | Online stellen bei InfinityFree: https://tierfutter-shop.great-site.net | ✅ online |
 | Admin-Rolle und Datenbankverwaltung im Browser (`admin.html`, `api/admin/admin_db.php`), Knopf *⚙ Admin* im Header mit eigenem Admin-Login | ✅ fertig |
+| SQL-Editor im Admin-Bereich: Stored Procedures mit `CALL` aufrufen, Ergebnisse als Tabelle (`api/admin/sql_editor.php`) | ✅ fertig |
 | Echte Zahlung / Lieferung | ❌ nicht geplant (Schulprojekt) |
 | "Passwort vergessen" | ⏳ optional, falls am Schluss noch Zeit bleibt |
 
@@ -242,7 +243,7 @@ tierfutter-shop/
 │   ├── konto/          Registrieren, Login, Logout, Session
 │   ├── shop/           Produkte, Warenkorb, Bestellen, Meine Bestellungen
 │   ├── ernaehrungsplan/ Ernährungsplan und gespeicherte Pläne
-│   └── admin/          Admin-Login und Datenbankverwaltung
+│   └── admin/          Admin-Login, Datenbankverwaltung, SQL-Editor
 ├── includes/           PHP-Dateien, die nur eingebunden werden (gesperrt)
 ├── database/           SQL-Skripte für phpMyAdmin (gesperrt)
 ├── README.md           Projektdokumentation (gesperrt)
@@ -262,7 +263,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | Datei | Inhalt |
 |---|---|
 | `index.html` | Aufbau der Seite, Ernährungsplan, Filter, Dialoge für Warenkorb, Login/Registrierung, Bestellformular, Bestellungen und "Meine Pläne" |
-| `admin.html`, `js/admin.js`, `css/admin.css` | Datenbankverwaltung für Admins: Tabellen anzeigen, Zeilen hinzufügen/bearbeiten/löschen, Tabellen erstellen/löschen, Spalten ergänzen/löschen |
+| `admin.html`, `js/admin.js`, `css/admin.css` | Datenbankverwaltung für Admins: Tabellen anzeigen, Zeilen hinzufügen/bearbeiten/löschen, Tabellen erstellen/löschen, Spalten ergänzen/löschen, SQL-Editor für `CALL sp_…` mit Ausgabefenster |
 | `agb.html`, `datenschutz.html` | AGB und Datenschutzerklärung (Mustertexte, keine Rechtsberatung) |
 | `css/style.css` | Farben (oben unter `:root`), Schriften, Abstände, Formulare, Smartphone-Ansicht |
 | `js/script.js` | Produkte laden und anzeigen, Filter, Ernährungsplan und "Meine Pläne", Warenkorb, Login-Ablauf, Bestellen |
@@ -279,6 +280,7 @@ VS-Code-Datei sowie versteckte Dateien und Ordner wie `.git` und
 | `api/ernaehrungsplan/saved_plans.php` | "Meine Pläne": Pläne des eingeloggten Kunden laden, speichern (`save`), löschen (`delete`) |
 | `api/admin/admin_login.php` | Admin-Login für die Datenbankverwaltung: prüft Passwort und Rolle `admin`, setzt den Admin-Zugang in der Session; `logout` beendet ihn |
 | `api/admin/admin_db.php` | Nur für Admins: Tabellen und Zeilen lesen (GET), Zeilen, Tabellen und Spalten ändern (POST mit CSRF-Token) |
+| `api/admin/sql_editor.php` | Nur für Admins: Liste der Prozeduren `sp_…` (GET), genau einen `CALL`-Befehl ausführen und alle Ergebnisse zurückgeben (POST mit CSRF-Token) |
 | `includes/config.php` | PDO-Verbindung, Session-Einstellungen, gemeinsame Hilfsfunktionen |
 | `includes/config.local.example.php` | Vorlage für die Datenbank-Zugangsdaten |
 | `includes/config.local.php` | Eigene Zugangsdaten (nicht in Git, aus der Vorlage erstellen) |
@@ -736,6 +738,30 @@ InfinityFree erlaubt keine Stored Procedures: dort `procedures.sql` nicht
 importieren und `DB_PROCEDURES` weglassen. Getestet mit MySQL 8 (Workbench)
 und MariaDB 10.11.
 
+### SQL-Editor im Admin-Bereich
+
+In `admin.html` öffnet der Knopf *▶ SQL-Editor (CALL)* ein Eingabefenster und
+ein Ausgabefenster. Dort ruft ein Admin die Prozeduren direkt auf der Website
+auf, ohne phpMyAdmin oder Workbench, z. B. `CALL sp_umsatz_pro_produkt();`.
+Rechts stehen alle Prozeduren mit ihren Parametern; ein Klick fügt eine
+Vorlage ein. Ausführen mit dem Knopf oder **Strg + Enter**. Die Ausgabe zeigt
+jedes Ergebnis als Tabelle, OUT-Parameter (z. B. `@user_id`) als eigene
+Tabelle *OUT-Variablen*, und Fehler aus der Prozedur (`SIGNAL`) im Klartext.
+
+Erlaubt ist **genau ein** Befehl `CALL sp_name(...)`. Als Werte gehen Zahlen,
+Text in `'…'`, `NULL`, `TRUE`/`FALSE` und Variablen `@name`. Der Server
+(`api/admin/sql_editor.php`) führt den eingegebenen Text nie direkt aus: Er
+zerlegt den Befehl, prüft den Namen in `information_schema.ROUTINES` und die
+Anzahl Werte, und setzt die Werte über Platzhalter (`?`) ein. `SELECT`,
+`DELETE`, `DROP`, Unterabfragen oder ein zweiter Befehl werden abgelehnt.
+Passwort-Hashes (z. B. bei `sp_benutzer_suchen`) erscheinen als
+„••• (versteckt)“. Pro Ergebnis werden höchstens 500 Zeilen angezeigt.
+
+Auf InfinityFree gibt es keine Prozeduren: Der Editor zeigt dann einen
+Hinweis statt der Liste. Sind die Prozeduren importiert, aber
+`DB_PROCEDURES` ist nicht `true`, funktioniert der Editor trotzdem (mit
+Hinweis, dass die Website selbst sie nicht nutzt).
+
 ## Entscheidungen im Projektverlauf
 
 Wichtige Entscheidungen, damit man nachvollziehen kann, warum das Projekt so
@@ -760,6 +786,7 @@ aufgebaut ist:
 | Bestehende Produkte im Plan | Nur dort zugeordnet, wo sie passen (Senior-Futter bei Gelenkproblemen), für alle Kategorien zusätzlich neue Diät-Produkte | «Getreidefrei» ist z. B. nicht automatisch für Allergiker geeignet |
 | Zugangsdaten | In `includes/config.local.php`, nicht in Git | Passwörter gehören nicht in ein öffentliches Repository |
 | Datenbankverwaltung | Eigene Seite `admin.html` mit Rolle `admin` in `users`, Änderungen über feste Aktionen (Zeilen, Tabellen, Spalten) statt freiem SQL-Feld; Shop-Tabellen geschützt | Admins sollen ohne phpMyAdmin arbeiten können. Ein freies SQL-Feld könnte mit einem Tippfehler den ganzen Shop löschen. |
+| SQL-Editor (2026-11-27) | Im Admin-Bereich ein Eingabe- und Ausgabefenster, aber nur für `CALL` von Prozeduren `sp_…`; der Server zerlegt den Befehl und setzt Werte über Platzhalter ein | Prozeduren sollen sich auf der Website vorführen lassen. Ein freies SQL-Feld bleibt zu gefährlich (siehe Datenbankverwaltung), Prozeduren machen nur, was in `procedures.sql` festgelegt ist. |
 | Hosting | Kostenlos bei InfinityFree, Upload über den Dateimanager, Datenbank mit angepasster `schema.sql` | Schulprojekt ohne Budget; PHP und MySQL wie lokal, kein Code-Umbau nötig. Auf Shared Hosting ist der Datenbankname vorgegeben, darum ohne `CREATE DATABASE`/`USE`. |
 
 ## Hinweise

@@ -262,3 +262,133 @@ textarea {
     flex-wrap: wrap
   }
 }
+
+/* SQL-EDITOR */
+.admin-side .sql-open {
+  margin-bottom: 18px
+}
+
+.admin-side .sql-open.active {
+  background: var(--green);
+  color: white
+}
+
+.sql-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start
+}
+
+.sql-editor label small {
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px
+}
+
+#sqlInput {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 14px;
+  background: #1f2b25;
+  color: #e8f1e5;
+  border-color: #1f2b25;
+  margin-bottom: 12px;
+  resize: vertical
+}
+
+.sql-procs {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto
+}
+
+.sql-procs h2 {
+  margin: 0 0 8px;
+  font-size: 15px
+}
+
+.sql-procs ul {
+  list-style: none;
+  padding: 0;
+  margin: 0
+}
+
+.sql-procs li button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--green);
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px
+}
+
+.sql-procs li button:hover {
+  background: var(--mint)
+}
+
+.sql-procs li small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere
+}
+
+.sql-output {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  min-height: 90px;
+  background: white
+}
+
+.sql-output h3 {
+  font-size: 15px;
+  margin: 16px 0 8px
+}
+
+.sql-output h3 small {
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px
+}
+
+.sql-output p {
+  margin: 0 0 6px
+}
+
+.sql-hint,
+.sql-sent {
+  color: var(--muted);
+  font-size: 13px
+}
+
+.sql-ok {
+  color: var(--green);
+  font-weight: 700
+}
+
+.sql-error {
+  color: #a3352b;
+  font-weight: 700;
+  white-space: pre-wrap
+}
+
+.sql-mode {
+  background: var(--mint);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px
+}
+
+.sql-mode.warn {
+  background: #fbeae7;
+  color: #a3352b
+}
+
+@media(max-width:900px) {
+  .sql-grid {
+    grid-template-columns: 1fr
+  }
+}
